@@ -47,12 +47,12 @@ fun CalendarScreen(navController: androidx.navigation.NavHostController) {
             )
         }
 
-        // [2] 상단에 위치한 달력 본체 (크기를 '내용물만큼'으로 줄임)
+        // [2] 상단에 위치한 달력
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight(), // <-- 핵심: 화면 전체가 아닌 달력 크기만큼만 차지합니다.
+                .wrapContentHeight(),
             verticalAlignment = Alignment.Top
         ) { page ->
             val pageMonth = remember(page) {
@@ -68,7 +68,7 @@ fun CalendarScreen(navController: androidx.navigation.NavHostController) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f) // 남은 공간을 모두 차지함
+                .weight(1f)
                 .background(Color(0xFFFAFAFA)),
             contentAlignment = Alignment.Center
         ) {
