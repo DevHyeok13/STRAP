@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "70104686038",
+    "project_id": "strap-2ec5a",
+    "storage_bucket": "strap-2ec5a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:70104686038:android:d4e923de15735e94429877",
+        "android_client_info": {
+          "package_name": "com.example.strapxml"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbo0s8_koAPgXAdBfkt_RZh3XaU73tj3c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
