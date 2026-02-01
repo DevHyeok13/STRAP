@@ -61,6 +61,7 @@ dependencies {
 
     //firebase
     implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
-
     implementation("androidx.fragment:fragment-ktx:1.6.2")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
 }
