@@ -78,7 +78,7 @@
         app:layout_constraintTop_toBottomOf="@id/divider2"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
-test
+
         <TextView android:id="@+id/btn_sun" android:text="일" style="@style/DayButtonStyle" android:textColor="#F44336"/>
 
         <TextView android:id="@+id/btn_mon" android:text="월" style="@style/DayButtonStyle" />
