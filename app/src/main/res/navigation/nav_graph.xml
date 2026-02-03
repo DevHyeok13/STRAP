@@ -66,8 +66,25 @@
     <fragment android:id="@+id/fragment_history" android:name="com.example.strapxml.HistoryFragment" android:label="스트레칭 기록" />
     <fragment android:id="@+id/fragment_videoresources" android:name="com.example.strapxml.VideoResources" android:label="자료실" />
     <fragment android:id="@+id/fragment_calendar" android:name="com.example.strapxml.CalendarFragment" android:label="캘린더" />
-    <fragment android:id="@+id/fragment_alarm" android:name="com.example.strapxml.AlarmFragment" android:label="알람" />
+
     <fragment android:id="@+id/fragment_community" android:name="com.example.strapxml.CommunityFragment" android:label="커뮤니티" />
     <fragment android:id="@+id/fragment_routine" android:name="com.example.strapxml.RoutineFragment" android:label="루틴 만들기" />
+
+    <fragment
+        android:id="@+id/fragment_alarm"
+        android:name="com.example.strapxml.AlarmFragment"
+        android:label="알람"
+        tools:layout="@layout/fragment_alarm">
+
+        <action
+            android:id="@+id/action_alarm_to_detail"
+            app:destination="@id/fragment_alarm_detail" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_alarm_detail"
+        android:name="com.example.strapxml.AlarmDetailFragment"
+        android:label="알람 설정"
+        tools:layout="@layout/fragment_alarm_detail" />
 
 </navigation>
