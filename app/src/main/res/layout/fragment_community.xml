@@ -76,8 +76,8 @@
 
         <ImageView
             android:id="@+id/iv_search_icon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:src="@drawable/search_icon"
             app:layout_constraintEnd_toStartOf="@+id/iv_filter_icon"
             app:layout_constraintTop_toTopOf="parent"
@@ -86,8 +86,8 @@
 
         <ImageView
             android:id="@+id/iv_filter_icon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:src="@drawable/filter_icon"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
