@@ -67,7 +67,17 @@
     <fragment android:id="@+id/fragment_videoresources" android:name="com.example.strapxml.VideoResources" android:label="자료실" />
     <fragment android:id="@+id/fragment_calendar" android:name="com.example.strapxml.CalendarFragment" android:label="캘린더" />
 
-    <fragment android:id="@+id/fragment_community" android:name="com.example.strapxml.CommunityFragment" android:label="커뮤니티" />
+    <fragment
+        android:id="@+id/fragment_community"
+        android:name="com.example.strapxml.CommunityFragment"
+        android:label="커뮤니티">
+        <action
+            android:id="@+id/action_community_to_write"
+            app:destination="@id/fragment_write" />
+    </fragment>
+
+
+
     <fragment android:id="@+id/fragment_routine" android:name="com.example.strapxml.RoutineFragment" android:label="루틴 만들기" />
 
     <fragment
@@ -87,4 +97,9 @@
         android:label="알람 설정"
         tools:layout="@layout/fragment_alarm_detail" />
 
+    <fragment
+        android:id="@+id/fragment_write"
+        android:name="com.example.strapxml.WriteFragment"
+        android:label="글쓰기"
+        tools:layout="@layout/fragment_write"/>
 </navigation>

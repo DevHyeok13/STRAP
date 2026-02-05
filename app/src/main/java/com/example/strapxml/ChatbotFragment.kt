@@ -11,7 +11,7 @@ class ChatbotFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // 임시로 빈 화면 반환 (나중에 바꿀 예정)
+        // 챗봇 화면 레이아웃 연결 (fragment_chatbot.xml이 있어야 함)
         return inflater.inflate(R.layout.fragment_chatbot, container, false)
     }
 }
