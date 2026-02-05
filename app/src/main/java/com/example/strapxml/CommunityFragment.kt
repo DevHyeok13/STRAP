@@ -54,7 +54,19 @@ class CommunityFragment : Fragment() {
 
         // 리사이클러뷰 설정
         recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = CommunityAdapter(emptyList())
+        // 어댑터 생성 시 클릭 이벤트 추가
+        adapter = CommunityAdapter(emptyList()) { clickedPost ->
+            val bundle = Bundle().apply {
+                putString("postId", clickedPost.id)
+                putString("title", clickedPost.title)
+                putString("content", clickedPost.content)
+                putString("author", clickedPost.author)
+                putString("postUid", clickedPost.uid)
+                putString("date", clickedPost.date)
+            }
+            findNavController().navigate(R.id.action_community_to_detail, bundle)
+        }
+        recyclerView.adapter = adapter
         recyclerView.adapter = adapter
 
         // 처음엔 자유게시판 로드
@@ -140,11 +152,15 @@ class CommunityFragment : Fragment() {
             .addOnSuccessListener { result ->
                 val fetchedList = mutableListOf<Post>()
                 for (document in result) {
+                    val id = document.id
                     val title = document.getString("title") ?: ""
                     val content = document.getString("content") ?: ""
                     val author = document.getString("author") ?: "익명"
+                    val uid = document.getString("uid") ?: ""
                     val date = document.getString("date") ?: ""
-                    fetchedList.add(Post(title, content, author, date))
+
+                    // Post 만들 때 uid 포함
+                    fetchedList.add(Post(id, title, content, author, uid, date))
                 }
 
                 // 원본 저장 (검색할 때 쓰려고)

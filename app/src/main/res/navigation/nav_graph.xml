@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/fragment_login">
+    app:startDestination="@id/fragment_login"
+    tools:ignore="ExtraText">
 
     <fragment
         android:id="@+id/fragment_login"
@@ -67,6 +68,8 @@
     <fragment android:id="@+id/fragment_videoresources" android:name="com.example.strapxml.VideoResources" android:label="자료실" />
     <fragment android:id="@+id/fragment_calendar" android:name="com.example.strapxml.CalendarFragment" android:label="캘린더" />
 
+
+    // 커뮤니티
     <fragment
         android:id="@+id/fragment_community"
         android:name="com.example.strapxml.CommunityFragment"
@@ -74,8 +77,26 @@
         <action
             android:id="@+id/action_community_to_write"
             app:destination="@id/fragment_write" />
+        <action
+            android:id="@+id/action_community_to_detail"
+            app:destination="@id/fragment_post_detail" />
     </fragment>
 
+    <fragment
+        android:id="@+id/fragment_write"
+        android:name="com.example.strapxml.WriteFragment"
+        android:label="글쓰기"
+        tools:layout="@layout/fragment_write"/>
+    <fragment
+        android:id="@+id/fragment_post_detail"
+        android:name="com.example.strapxml.PostDetailFragment"
+        android:label="상세보기">
+        <argument android:name="postId" app:argType="string"/>
+        <argument android:name="title" app:argType="string"/>
+        <argument android:name="content" app:argType="string"/>
+        <argument android:name="author" app:argType="string"/>
+        <argument android:name="date" app:argType="string"/>
+    </fragment>
 
 
     <fragment android:id="@+id/fragment_routine" android:name="com.example.strapxml.RoutineFragment" android:label="루틴 만들기" />
@@ -97,9 +118,6 @@
         android:label="알람 설정"
         tools:layout="@layout/fragment_alarm_detail" />
 
-    <fragment
-        android:id="@+id/fragment_write"
-        android:name="com.example.strapxml.WriteFragment"
-        android:label="글쓰기"
-        tools:layout="@layout/fragment_write"/>
+
+
 </navigation>

@@ -6,15 +6,21 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-// 게시글 데이터 정의
+// 1. Post 데이터에 'id' 추가 (댓글 달 때 필요함)
 data class Post(
+    val id: String, // 게시글 고유 ID
     val title: String,
     val content: String,
     val author: String,
+    val uid: String,
     val date: String
 )
 
-class CommunityAdapter(private var postList: List<Post>) : RecyclerView.Adapter<CommunityAdapter.PostViewHolder>() {
+// 2. 어댑터에 클릭 이벤트(onItemClick) 추가
+class CommunityAdapter(
+    private var postList: List<Post>,
+    private val onItemClick: (Post) -> Unit // 클릭했을 때 실행할 함수
+) : RecyclerView.Adapter<CommunityAdapter.PostViewHolder>() {
 
     class PostViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val title: TextView = view.findViewById(R.id.tv_post_title)
@@ -34,11 +40,15 @@ class CommunityAdapter(private var postList: List<Post>) : RecyclerView.Adapter<
         holder.content.text = post.content
         holder.author.text = post.author
         holder.date.text = post.date
+
+        // 3. 아이템 클릭 시 상세 화면으로 이동하도록 설정
+        holder.itemView.setOnClickListener {
+            onItemClick(post)
+        }
     }
 
     override fun getItemCount() = postList.size
 
-    // 데이터를 새로 받아서 리스트를 갱신
     fun updateData(newPostList: List<Post>) {
         postList = newPostList
         notifyDataSetChanged()
