@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.strapxml.databinding.FragmentAlarmDetailBinding
 
 class AlarmDetailFragment : Fragment() {
@@ -18,6 +19,9 @@ class AlarmDetailFragment : Fragment() {
 
     private var currentId: Long = -1L
     private lateinit var dayViews: List<TextView>
+
+    // [추가됨] 현재 선택된 루틴 ID 저장 변수
+    private var selectedRoutineId: Long = -1L
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedState: Bundle?): View {
         _binding = FragmentAlarmDetailBinding.inflate(inflater, container, false)
@@ -34,6 +38,20 @@ class AlarmDetailFragment : Fragment() {
 
         dayViews = listOf(binding.btnSun, binding.btnMon, binding.btnTue, binding.btnWed, binding.btnThu, binding.btnFri, binding.btnSat)
 
+        // [추가됨] 루틴 목록 불러오기 & 리사이클러뷰 설정
+        val allRoutines = RoutineFunctions.loadRoutines(requireContext())
+
+        // 기존 알람이면 저장된 routineId 가져오기, 아니면 -1
+        selectedRoutineId = existingItem?.routineId ?: -1L
+
+        val routineAdapter = SelectRoutineAdapter(allRoutines, selectedRoutineId) { newId ->
+            selectedRoutineId = newId // 사용자가 클릭하면 변수 업데이트
+        }
+        binding.recyclerRoutineSelect.layoutManager = LinearLayoutManager(context)
+        binding.recyclerRoutineSelect.adapter = routineAdapter
+
+        // --- (아래는 기존 코드와 동일, 저장 부분만 약간 수정) ---
+
         // 초기값 설정
         if (existingItem != null) {
             binding.etAlarmName.setText(existingItem.name)
@@ -41,10 +59,9 @@ class AlarmDetailFragment : Fragment() {
             binding.timePicker.minute = existingItem.minute
             dayViews.forEachIndexed { index, view ->
                 view.isSelected = existingItem.days[index]
-                updateDayViewStyle(view) // 색상 적용
+                updateDayViewStyle(view)
             }
         } else {
-            // 새 알람일 때도 초기 색상 적용
             dayViews.forEach { updateDayViewStyle(it) }
         }
 
@@ -75,9 +92,16 @@ class AlarmDetailFragment : Fragment() {
                 AlarmFunctions.cancelAlarm(requireContext(), existingItem)
             }
 
+            // [수정됨] routineId = selectedRoutineId 추가
             val newItem = AlarmItem(
                 id = if (currentId == -1L) System.currentTimeMillis() else currentId,
-                name = name, timeText = timeText, hour = hour, minute = minute, isEnabled = true, days = days
+                name = name,
+                timeText = timeText,
+                hour = hour,
+                minute = minute,
+                isEnabled = true,
+                days = days,
+                routineId = selectedRoutineId // 선택한 루틴 ID 저장!
             )
 
             alarmList.add(newItem)
@@ -87,7 +111,7 @@ class AlarmDetailFragment : Fragment() {
             findNavController().popBackStack()
         }
 
-        // 삭제 버튼
+        // 삭제 및 취소 버튼 (기존 유지)
         binding.btnDelete.setOnClickListener {
             if (existingItem != null) {
                 alarmList.remove(existingItem)
@@ -96,21 +120,16 @@ class AlarmDetailFragment : Fragment() {
             }
             findNavController().popBackStack()
         }
-
         binding.btnCancel.setOnClickListener { findNavController().popBackStack() }
     }
 
-    // 요일별 색상 로직
     private fun updateDayViewStyle(view: TextView) {
-        if (view.isSelected) {
-            // 선택되었을 때는 무조건 흰색
-            view.setTextColor(Color.WHITE)
-        } else {
-            // 선택 안 됐을 때는 요일별로 색깔 다르게
+        if (view.isSelected) view.setTextColor(Color.WHITE)
+        else {
             when (view.id) {
-                R.id.btn_sun -> view.setTextColor(Color.parseColor("#F44336")) // 일요일: 빨강
-                R.id.btn_sat -> view.setTextColor(Color.parseColor("#2196F3")) // 토요일: 파랑
-                else -> view.setTextColor(Color.BLACK) // 평일: 검정
+                R.id.btn_sun -> view.setTextColor(Color.parseColor("#F44336"))
+                R.id.btn_sat -> view.setTextColor(Color.parseColor("#2196F3"))
+                else -> view.setTextColor(Color.BLACK)
             }
         }
     }

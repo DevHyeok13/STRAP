@@ -66,7 +66,6 @@ class AlarmFragment : Fragment() {
         adapter.notifyDataSetChanged()
     }
 
-    // --- 권한 체크 (기존 코드 유지) ---
     private fun checkPermissions() {
         val context = requireContext()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

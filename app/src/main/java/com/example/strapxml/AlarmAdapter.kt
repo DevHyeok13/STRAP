@@ -7,7 +7,6 @@ import com.example.strapxml.databinding.ItemAlarmBinding
 
 class AlarmAdapter(
     private val items: MutableList<AlarmItem>,
-    // [수정됨] 클릭 시 '몇 번째(Int)' 인지도 같이 넘겨줍니다.
     private val onClick: (AlarmItem, Int) -> Unit
 ) : RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder>() {
 
@@ -17,7 +16,6 @@ class AlarmAdapter(
             binding.tvAlarmTime.text = item.timeText
             binding.switchAlarm.isChecked = item.isEnabled
 
-            // [수정됨] 클릭 시 아이템과 위치(position)를 같이 보냄
             binding.root.setOnClickListener {
                 onClick(item, position)
             }
@@ -30,7 +28,6 @@ class AlarmAdapter(
     }
 
     override fun onBindViewHolder(holder: AlarmViewHolder, position: Int) {
-        // [수정됨] position을 bind 함수에 전달
         holder.bind(items[position], position)
     }
 

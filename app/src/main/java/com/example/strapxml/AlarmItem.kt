@@ -7,5 +7,6 @@ data class AlarmItem(
     var hour: Int,
     var minute: Int,
     var isEnabled: Boolean,
-    var days: MutableList<Boolean> = MutableList(7) { false }
+    var days: MutableList<Boolean> = MutableList(7) { false },
+    var routineId: Long = -1L
 )
