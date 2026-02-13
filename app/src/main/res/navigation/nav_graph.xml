@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/fragment_login"
+    tools:ignore="ExtraText">
+
+    <fragment
+        android:id="@+id/fragment_login"
+        android:name="com.example.strapxml.LoginFragment"
+        android:label="로그인"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_login_to_home"
+            app:destination="@id/fragment_home"
+            app:popUpTo="@id/fragment_login"
+            app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_login_to_signup"
+            app:destination="@id/fragment_signup" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_signup"
+        android:name="com.example.strapxml.SignupFragment"
+        android:label="회원가입"
+        tools:layout="@layout/fragment_signup" />
+
+    <fragment
+        android:id="@+id/fragment_home"
+        android:name="com.example.strapxml.HomeFragment"
+        android:label="홈"
+        tools:layout="@layout/fragment_home">
+        <action android:id="@+id/action_home_to_chatbot" app:destination="@id/fragment_chatbot" />
+        <action android:id="@+id/action_home_to_history" app:destination="@id/fragment_history" />
+        <action android:id="@+id/action_home_to_videoresources" app:destination="@id/fragment_videoresources" />
+        <action android:id="@+id/action_home_to_calendar" app:destination="@id/fragment_calendar" />
+        <action android:id="@+id/action_home_to_alarm" app:destination="@id/fragment_alarm" />
+        <action android:id="@+id/action_home_to_community" app:destination="@id/fragment_community" />
+        <action android:id="@+id/action_home_to_routine" app:destination="@id/fragment_routine" />
+        <action android:id="@+id/action_home_to_profile" app:destination="@id/fragment_profile" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_profile"
+        android:name="com.example.strapxml.ProfileFragment"
+        android:label="내 정보">
+        <action
+            android:id="@+id/action_profile_to_login"
+            app:destination="@id/fragment_login"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment android:id="@+id/fragment_chatbot" android:name="com.example.strapxml.ChatbotFragment" android:label="챗봇" />
+    <fragment android:id="@+id/fragment_history" android:name="com.example.strapxml.HistoryFragment" android:label="스트레칭 기록" />
+    <fragment android:id="@+id/fragment_calendar" android:name="com.example.strapxml.CalendarFragment" android:label="캘린더" />
+
+    <fragment
+        android:id="@+id/fragment_community"
+        android:name="com.example.strapxml.CommunityFragment"
+        android:label="커뮤니티">
+        <action android:id="@+id/action_community_to_write" app:destination="@id/fragment_write" />
+        <action android:id="@+id/action_community_to_detail" app:destination="@id/fragment_post_detail" />
+    </fragment>
+    <fragment android:id="@+id/fragment_write" android:name="com.example.strapxml.WriteFragment" android:label="글쓰기" />
+    <fragment android:id="@+id/fragment_post_detail" android:name="com.example.strapxml.PostDetailFragment" android:label="상세보기">
+        <argument android:name="postId" app:argType="string"/>
+        <argument android:name="title" app:argType="string"/>
+        <argument android:name="content" app:argType="string"/>
+        <argument android:name="author" app:argType="string"/>
+        <argument android:name="date" app:argType="string"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_alarm"
+        android:name="com.example.strapxml.AlarmFragment"
+        android:label="알람">
+        <action android:id="@+id/action_alarm_to_detail" app:destination="@id/fragment_alarm_detail" />
+    </fragment>
+    <fragment
+        android:id="@+id/fragment_alarm_detail"
+        android:name="com.example.strapxml.AlarmDetailFragment"
+        android:label="알람 설정" />
+
+    <fragment
+        android:id="@+id/fragment_routine"
+        android:name="com.example.strapxml.RoutineFragment"
+        android:label="루틴 만들기">
+        <action
+            android:id="@+id/action_routine_to_detail"
+            app:destination="@id/fragment_routine_detail" />
+        <action
+            android:id="@+id/action_routine_to_add"
+            app:destination="@id/fragment_routine_add" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_routine_detail"
+        android:name="com.example.strapxml.RoutineDetailFragment"
+        android:label="루틴 상세">
+        <argument android:name="routineId" app:argType="long" android:defaultValue="-1L" />
+        <action
+            android:id="@+id/action_detail_to_add"
+            app:destination="@id/fragment_routine_add" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_routine_add"
+        android:name="com.example.strapxml.RoutineAddFragment"
+        android:label="루틴 추가">
+        <argument android:name="routineId" app:argType="long" android:defaultValue="-1L" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_videoresources"
+        android:name="com.example.strapxml.VideoResources"
+        android:label="VideoResources"
+        tools:layout="@layout/fragment_videoresources">
+
+        <action
+            android:id="@+id/action_video_to_detail"
+            app:destination="@id/fragment_video_detail" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_video_detail"
+        android:name="com.example.strapxml.VideoDetailFragment"
+        android:label="VideoDetailFragment"
+        tools:layout="@layout/fragment_video_detail" />
+</navigation>
