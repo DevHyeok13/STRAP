@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="start"
+    android:padding="4dp">
+
+    <ImageView
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:src="@drawable/ic_launcher_foreground"
+        android:background="#E0E0E0"
+        android:layout_marginEnd="8dp"
+        android:layout_gravity="top"/>
+
+    <TextView
+        android:id="@+id/tv_ai_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="250dp"
+        android:text="AI가 답변하는 메시지입니다."
+        android:textColor="#333333"
+        android:background="@drawable/bg_signup_box"
+        android:padding="12dp"
+        android:textSize="14sp"/>
+</LinearLayout>

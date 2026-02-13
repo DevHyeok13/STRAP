@@ -65,4 +65,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // 구글 Gemini AI 라이브러리
+    implementation(libs.generativeai)
 }
