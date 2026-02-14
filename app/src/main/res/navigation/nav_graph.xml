@@ -126,7 +126,7 @@
 
     <fragment
         android:id="@+id/fragment_video_detail"
-        android:name="com.example.strapxml.VideoDetailFragment"
+        android:name="com.example.strapxml.VideoResourcesDetail"
         android:label="VideoDetailFragment"
-        tools:layout="@layout/fragment_video_detail" />
+        tools:layout="@layout/fragment_videoresources_detail" />
 </navigation>
