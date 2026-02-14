@@ -72,4 +72,7 @@ dependencies {
     implementation("androidx.browser:browser:1.7.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // 구글 Gemini AI 라이브러리
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 }
