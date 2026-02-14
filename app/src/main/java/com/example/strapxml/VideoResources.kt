@@ -28,7 +28,7 @@ class VideoResources : Fragment() {
     private val binding get() = _binding!!
 
     // 유튜브 API 키
-    private val YOUTUBE_API_KEY = "AIzaSyC2QpZp7vWCi8O8U3ghCmpqhE6mz9WyMXk"
+    private val YOUTUBE_API_KEY = "11111"
 
    //스트레칭 영상 추가 (밑에 targetvVideoIds 에 추가해야함)
     private val myCustomData = mapOf(
