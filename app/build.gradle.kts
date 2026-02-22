@@ -78,4 +78,9 @@ dependencies {
 
     // 그래프
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    // 안드로이드 공식 내장 DB
+    val room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version") // 코루틴(비동기) 지원
 }
