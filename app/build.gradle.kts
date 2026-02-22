@@ -75,4 +75,7 @@ dependencies {
 
     // 구글 Gemini AI 라이브러리
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+
+    // 그래프
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }
