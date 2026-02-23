@@ -41,6 +41,7 @@ android {
 }
 
 dependencies {
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -75,4 +76,14 @@ dependencies {
 
     // 구글 Gemini AI 라이브러리
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+
+    //자세분석
+    val camerax_version = "1.3.0"
+    implementation("androidx.camera:camera-core:$camerax_version")
+    implementation("androidx.camera:camera-camera2:$camerax_version")
+    implementation("androidx.camera:camera-lifecycle:$camerax_version")
+    implementation("androidx.camera:camera-view:$camerax_version")
+
+// MediaPipe Pose
+    implementation("com.google.mediapipe:tasks-vision:0.10.0")
 }

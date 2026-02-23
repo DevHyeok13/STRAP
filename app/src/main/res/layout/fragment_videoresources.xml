@@ -43,11 +43,35 @@
                 android:textColor="@android:color/black" />
 
             <com.google.android.material.chip.Chip
+                android:id="@+id/chip_waist"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="허리"
+                android:textColor="@android:color/black"/>
+
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chip_neck"
                 style="@style/Widget.MaterialComponents.Chip.Choice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="목/어깨"
+                android:text="목"
+                android:textColor="@android:color/black"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_shoulder"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="어깨"
+                android:textColor="@android:color/black"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_leg"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="다리"
                 android:textColor="@android:color/black"/>
 
         </com.google.android.material.chip.ChipGroup>

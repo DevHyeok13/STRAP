@@ -127,11 +127,24 @@
         android:id="@+id/fragment_video_detail"
         android:name="com.example.strapxml.VideoResourcesDetail"
         android:label="VideoDetailFragment"
-        tools:layout="@layout/fragment_videoresources_detail" />
+        tools:layout="@layout/fragment_videoresources_detail" >
+    <action
+        android:id="@+id/action_detail_to_pose"
+        app:destination="@id/fragment_pose_analysis" />
+    </fragment>
 
     <fragment
         android:id="@+id/fragment_chatbot"
         android:name="com.example.strapxml.ChatbotFragment"
         android:label="AI 챗봇"
         tools:layout="@layout/fragment_chatbot" />
+
+    <fragment
+        android:id="@+id/fragment_pose_analysis"
+        android:name="com.example.strapxml.PoseAnalysisFragment"
+        android:label="자세분석"
+        tools:layout="@layout/fragment_pose_analysis" />
+        />
+
+
 </navigation>

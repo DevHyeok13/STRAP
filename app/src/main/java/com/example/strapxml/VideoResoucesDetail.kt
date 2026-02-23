@@ -11,7 +11,8 @@ import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.bumptech.glide.Glide // Glide 임포트 필수
+import androidx.navigation.fragment.findNavController // ★ 화면 이동을 위해 추가된 임포트
+import com.bumptech.glide.Glide
 import com.example.strapxml.databinding.FragmentVideoresourcesDetailBinding
 
 class VideoResourcesDetail : Fragment() {
@@ -40,23 +41,33 @@ class VideoResourcesDetail : Fragment() {
 
         item?.let { stretchingItem ->
             binding.tvDetailTitle.text = stretchingItem.name
-            binding.tvDetailDesc.text = stretchingItem.description // 여기서 내가 입력한 설명이 나옴
+            binding.tvDetailDesc.text = stretchingItem.description
 
-            // ★ [추가된 부분] 썸네일 이미지 로드
+            // 썸네일 이미지 로드
             if (stretchingItem.imageUrl.isNotEmpty()) {
                 Glide.with(this)
                     .load(stretchingItem.imageUrl)
-                    .placeholder(R.drawable.ic_launcher_background) // 로딩 중 이미지
-                    .error(android.R.color.darker_gray) // 에러 시 이미지
-                    .into(binding.ivDetailThumbnail) // XML에서 수정한 ID
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .error(android.R.color.darker_gray)
+                    .into(binding.ivDetailThumbnail)
             }
 
-            // 클릭 리스너 (브라우저 열기)
+            // 유튜브 영상 띄우기 (이미지 클릭 시)
             val youtubeUrl = "https://www.youtube.com/watch?v=${stretchingItem.videoId}"
             binding.layoutVideoLauncher.setOnClickListener {
                 showVideoInBrowser(youtubeUrl)
             }
         }
+
+        // ★ [추가된 부분] '자세 분석' 버튼 클릭 시 화면 이동
+        binding.btnPoseAnalysis.setOnClickListener {
+            // nav_graph.xml에 뚫어둔 길(action_detail_to_pose)을 따라 이동합니다.
+            findNavController().navigate(R.id.action_detail_to_pose)
+        }
+
+        // (참고) 이전, 다음 버튼 등은 나중에 여기에 추가하시면 됩니다.
+        // binding.btnPrev.setOnClickListener { ... }
+        // binding.btnNext.setOnClickListener { ... }
     }
 
     private fun showVideoInBrowser(url: String) {
