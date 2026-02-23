@@ -22,7 +22,7 @@ class VideoResources : Fragment() {
     private val binding get() = _binding!!
 
     // 유튜브 API 키
-    private val YOUTUBE_API_KEY = "AIzaSyC2QpZp7vWCi8O8U3ghCmpqhE6mz9WyMXk"
+    private val YOUTUBE_API_KEY = "youtube_data_api"
 
     // 원본 데이터를 계속 가지고 있을 리스트
     private val fullList = mutableListOf<StretchingItem>()
