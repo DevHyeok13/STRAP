@@ -41,7 +41,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -76,6 +75,13 @@ dependencies {
 
     // 구글 Gemini AI 라이브러리
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    // 그래프
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    // 안드로이드 공식 내장 DB
+    val room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version") // 코루틴(비동기) 지원
 
     //자세분석
     val camerax_version = "1.3.0"
