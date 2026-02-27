@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -33,36 +34,88 @@ class ChatbotFragment : Fragment() {
         val btnSend = view.findViewById<Button>(R.id.btn_send)
         rvChat = view.findViewById(R.id.rv_chat)
 
-        // 리사이클러뷰 (채팅창) 설정
-        chatAdapter = ChatAdapter(messageList)
+        chatAdapter = ChatAdapter(messageList) { stretches ->
+
+            // 여러 개의 동작(Pair)을 "이름 (시간초)" 형태의 글자 리스트로 변환
+            val stretchDetails = stretches.map { "${it.first} (${it.second}초)" }
+
+            // 루틴 이름 작성 (동작이 여러 개면 "거북목 외 2개" 식으로)
+            val routineName = if (stretches.size > 1) {
+                "AI 세트: ${stretches[0].first} 외 ${stretches.size - 1}개"
+            } else {
+                "AI 추천: ${stretches[0].first}"
+            }
+
+            RoutineFunctions.addRoutine(
+                context = requireContext(),
+                name = routineName,
+                stretchingList = stretchDetails
+            )
+
+            Toast.makeText(requireContext(), "루틴 바구니에 총 ${stretches.size}개 동작 추가 완료! 🏃‍♂️", Toast.LENGTH_SHORT).show()
+        }
+
         rvChat.layoutManager = LinearLayoutManager(requireContext())
         rvChat.adapter = chatAdapter
 
-        // 구글 Gemini AI 모델 준비
+        // 구글 Gemini AI 모델 세팅
         val generativeModel = GenerativeModel(
             modelName = "gemini-2.5-flash-lite",
             apiKey = BotConfig.GEMINI_API_KEY
         )
 
-        // 전송 버튼을 눌렀을 때
         btnSend.setOnClickListener {
             val userText = etMessage.text.toString()
             if (userText.isNotEmpty()) {
-                // 통신이 시작되면 중복 클릭을 막기 위해 버튼을 잠금
                 btnSend.isEnabled = false
 
                 addMessage(userText, true)
                 etMessage.text.clear()
 
-                addMessage("AI가 답변을 생각 중입니다...", false)
+                addMessage("AI가 맞춤 스트레칭을 고민 중입니다...", false)
                 val loadingPosition = messageList.size - 1
 
                 lifecycleScope.launch {
                     try {
-                        val response = generativeModel.generateContent(userText)
-                        val aiText = response.text ?: "답변을 생성하지 못했습니다."
+                        // ✨ 포인트 2: 프롬프트 업그레이드 (여러 개 추천 허용)
+                        val secretPrompt = """
+            $userText
+            
+            (규칙: 사용자의 증상에 맞는 스트레칭을 1개~3개 정도 세트로 추천해줘.
+            그리고 답변의 맨 마지막 줄에 반드시 '||스트레칭 이름,시간(초)||' 형식으로 데이터를 적어줘. 
+            여러 개를 추천했다면 기호를 여러 번 연달아 적어줘.
+            예시: ||목 늘리기,60|| ||어깨 돌리기,120|| ||가슴 펴기,60||
+            만약 추천할 스트레칭이 없다면 이 기호를 절대 쓰지 마.)
+        """.trimIndent()
 
-                        messageList[loadingPosition] = ChatMessage(aiText, false)
+                        val response = generativeModel.generateContent(secretPrompt)
+                        val aiRawText = response.text ?: "답변을 생성하지 못했습니다."
+
+                        // 여러 개의 기호 모두 찾아내기 (findAll 사용)
+                        var displayAiText = aiRawText
+                        val parsedStretches = mutableListOf<Pair<String, Int>>()
+
+                        val regex = Regex("""\|\|(.*?),(.*?)\|\|""")
+                        val matchResults = regex.findAll(aiRawText) // find -> findAll 로 변경!
+
+                        for (match in matchResults) {
+                            val name = match.groupValues[1].trim()
+                            val duration = match.groupValues[2].trim().toIntOrNull() ?: 60
+
+                            // 리스트에 하나씩 추가
+                            parsedStretches.add(Pair(name, duration))
+
+                            displayAiText = displayAiText.replace(match.value, "").trim()
+                        }
+
+                        // 찾아낸 동작이 1개라도 있으면 리스트를 전달, 없으면 null 전달
+                        val finalStretches = if (parsedStretches.isNotEmpty()) parsedStretches else null
+
+                        messageList[loadingPosition] = ChatMessage(
+                            text = displayAiText,
+                            isUser = false,
+                            recommendedStretches = finalStretches
+                        )
                         chatAdapter.notifyItemChanged(loadingPosition)
                         rvChat.scrollToPosition(loadingPosition)
 
@@ -70,7 +123,6 @@ class ChatbotFragment : Fragment() {
                         messageList[loadingPosition] = ChatMessage("오류 원인: ${e.message}", false)
                         chatAdapter.notifyItemChanged(loadingPosition)
                     } finally {
-                        // [추가] 에러가 나든 성공하든, 통신이 끝나면 버튼을 다시 켜줍니다!
                         btnSend.isEnabled = true
                     }
                 }
@@ -78,9 +130,8 @@ class ChatbotFragment : Fragment() {
         }
     }
 
-    // 메시지를 리스트에 추가하고 화면 맨 아래로 스크롤하는 도우미 함수
     private fun addMessage(text: String, isUser: Boolean) {
-        messageList.add(ChatMessage(text, isUser))
+        messageList.add(ChatMessage(text, isUser, null))
         chatAdapter.notifyItemInserted(messageList.size - 1)
         rvChat.scrollToPosition(messageList.size - 1)
     }

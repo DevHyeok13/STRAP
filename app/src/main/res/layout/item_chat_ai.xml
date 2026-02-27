@@ -24,4 +24,11 @@
         android:background="@drawable/bg_signup_box"
         android:padding="12dp"
         android:textSize="14sp"/>
+
+    <Button
+        android:id="@+id/btn_add_routine"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="내 맞춤 루틴에 추가 ➕"
+        android:visibility="gone" />
 </LinearLayout>
