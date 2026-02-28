@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     //firebase
     id("com.google.gms.google-services")
+    //내부 DB
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -90,6 +92,11 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:$camerax_version")
     implementation("androidx.camera:camera-view:$camerax_version")
 
-// MediaPipe Pose
+    // MediaPipe Pose
     implementation("com.google.mediapipe:tasks-vision:0.10.0")
+
+    // Room 세팅
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 }

@@ -3,20 +3,25 @@ package com.example.strapxml
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-// 메시지 데이터 모델 (내용과 보낸 사람 구분)
-data class ChatMessage(val text: String, val isUser: Boolean)
+// 기존 코드 지우고 이걸로 변경!
+data class ChatMessage(
+    val text: String,
+    val isUser: Boolean,
+    val recommendedStretches: List<Pair<String, Int>>? = null // 여러 개 저장!
+)
 
-// 채팅 어댑터
-class ChatAdapter(private val messageList: List<ChatMessage>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ChatAdapter(
+    private val messageList: List<ChatMessage>,
+    private val onAddRoutineClicked: (List<Pair<String, Int>>) -> Unit
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    // 뷰 타입 구분용 숫자
     private val VIEW_TYPE_USER = 1
     private val VIEW_TYPE_AI = 2
 
-    // 누가 보낸 메시지인지 판단해서 뷰 타입 결정
     override fun getItemViewType(position: Int): Int {
         return if (messageList[position].isUser) VIEW_TYPE_USER else VIEW_TYPE_AI
     }
@@ -33,22 +38,36 @@ class ChatAdapter(private val messageList: List<ChatMessage>) : RecyclerView.Ada
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val message = messageList[position]
+
         if (holder is UserViewHolder) {
             holder.userText.text = message.text
         } else if (holder is AiViewHolder) {
             holder.aiText.text = message.text
+
+            // 💡 3. 리스트에 데이터가 1개라도 들어있으면 버튼을 보여줌!
+            val stretches = message.recommendedStretches
+            if (!stretches.isNullOrEmpty()) {
+                holder.btnAddRoutine.visibility = View.VISIBLE
+
+                // 버튼 누르면 동작 '리스트 통째로' 전달
+                holder.btnAddRoutine.setOnClickListener {
+                    onAddRoutineClicked(stretches)
+                }
+            } else {
+                holder.btnAddRoutine.visibility = View.GONE
+            }
         }
     }
 
     override fun getItemCount() = messageList.size
 
-    // 내가 보낸 말풍선 뷰홀더
     class UserViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val userText: TextView = view.findViewById(R.id.tv_user_message)
     }
 
-    // AI가 보낸 말풍선 뷰홀더
+    // 💡 수정됨: AI 뷰홀더에서 버튼(btn_add_routine)을 찾아서 연결합니다.
     class AiViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val aiText: TextView = view.findViewById(R.id.tv_ai_message)
+        val btnAddRoutine: Button = view.findViewById(R.id.btn_add_routine) // 버튼 ID
     }
 }

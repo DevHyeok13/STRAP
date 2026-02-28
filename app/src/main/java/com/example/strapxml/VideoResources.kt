@@ -21,7 +21,7 @@ class VideoResources : Fragment() {
     private var _binding: FragmentVideoresourcesBinding? = null
     private val binding get() = _binding!!
 
-    // 유튜브 API 키 (실제 출시할 때는 보안을 위해 숨기는 것이 좋습니다)
+    // 유튜브 API 키
     private val YOUTUBE_API_KEY = "youtube_data_api"
 
     // 원본 데이터를 계속 가지고 있을 리스트
@@ -124,7 +124,6 @@ class VideoResources : Fragment() {
             val bundle = Bundle().apply {
                 putSerializable("stretchingItem", selectedItem)
             }
-            // ★ nav_graph.xml에 정의된 화살표 ID를 타고 상세 화면으로 이동합니다.
             findNavController().navigate(R.id.action_video_to_detail, bundle)
         }
         binding.rvStretchingList.adapter = adapter
