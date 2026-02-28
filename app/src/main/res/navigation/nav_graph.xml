@@ -103,6 +103,9 @@
         <action
             android:id="@+id/action_detail_to_add"
             app:destination="@id/fragment_routine_add" />
+        <action
+            android:id="@+id/action_routine_detail_to_video_detail"
+            app:destination="@id/fragment_video_detail" />
     </fragment>
 
     <fragment
@@ -117,7 +120,6 @@
         android:name="com.example.strapxml.VideoResources"
         android:label="VideoResources"
         tools:layout="@layout/fragment_videoresources">
-
         <action
             android:id="@+id/action_video_to_detail"
             app:destination="@id/fragment_video_detail" />
@@ -128,9 +130,9 @@
         android:name="com.example.strapxml.VideoResourcesDetail"
         android:label="VideoDetailFragment"
         tools:layout="@layout/fragment_videoresources_detail" >
-    <action
-        android:id="@+id/action_detail_to_pose"
-        app:destination="@id/fragment_pose_analysis" />
+        <action
+            android:id="@+id/action_detail_to_pose"
+            app:destination="@id/fragment_pose_analysis" />
     </fragment>
 
     <fragment
@@ -144,7 +146,5 @@
         android:name="com.example.strapxml.PoseAnalysisFragment"
         android:label="자세분석"
         tools:layout="@layout/fragment_pose_analysis" />
-        />
-
 
 </navigation>

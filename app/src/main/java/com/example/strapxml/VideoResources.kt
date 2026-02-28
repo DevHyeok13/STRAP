@@ -21,8 +21,8 @@ class VideoResources : Fragment() {
     private var _binding: FragmentVideoresourcesBinding? = null
     private val binding get() = _binding!!
 
-    // 유튜브 API 키
-    private val YOUTUBE_API_KEY = "youtube_data_api"
+    // 유튜브 API 키 (실제 출시할 때는 보안을 위해 숨기는 것이 좋습니다)
+    private val YOUTUBE_API_KEY = "AIzaSyC2QpZp7vWCi8O8U3ghCmpqhE6mz9WyMXk"
 
     // 원본 데이터를 계속 가지고 있을 리스트
     private val fullList = mutableListOf<StretchingItem>()
@@ -81,13 +81,13 @@ class VideoResources : Fragment() {
 
                             val finalTitle = customInfo?.title ?: video.snippet.title
                             val finalDesc = customInfo?.description ?: video.snippet.description
-                            val finalCategory = customInfo?.category ?: "기타" // ★ 제대로 된 카테고리 적용
+                            val finalCategory = customInfo?.category ?: "기타"
 
                             val item = StretchingItem(
                                 id = 0,
                                 name = finalTitle,
                                 description = finalDesc,
-                                category = finalCategory, // "스트레칭" 대신 카테고리 입력
+                                category = finalCategory,
                                 videoId = video.id,
                                 imageRes = R.drawable.ic_launcher_background,
                                 imageUrl = video.snippet.thumbnails.medium.url
@@ -124,6 +124,7 @@ class VideoResources : Fragment() {
             val bundle = Bundle().apply {
                 putSerializable("stretchingItem", selectedItem)
             }
+            // ★ nav_graph.xml에 정의된 화살표 ID를 타고 상세 화면으로 이동합니다.
             findNavController().navigate(R.id.action_video_to_detail, bundle)
         }
         binding.rvStretchingList.adapter = adapter

@@ -2,7 +2,10 @@ package com.example.strapxml
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.os.Bundle
+import android.os.SystemClock
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.LayoutInflater
@@ -14,11 +17,13 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.example.strapxml.databinding.FragmentPoseAnalysisBinding
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
+import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -28,18 +33,18 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
     private var _binding: FragmentPoseAnalysisBinding? = null
     private val binding get() = _binding!!
 
-    // 카메라 및 스레드
     private lateinit var cameraExecutor: ExecutorService
-
-    // MediaPipe 자세 인식기
     private var poseLandmarker: PoseLandmarker? = null
 
-    // TTS (음성 안내)
     private var tts: TextToSpeech? = null
     private var lastSpokenTime: Long = 0
-    private val COOLDOWN_MS = 3000 // 3초에 한 번만 말하도록 쿨다운 설정
+    private val COOLDOWN_MS = 3000
 
-    // 권한 요청 런처
+    private var currentVideoId: String = ""
+
+    private var previousLandmarks: List<MyLandmark>? = null
+    private val SMOOTHING_FACTOR = 0.2f
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -57,13 +62,16 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        currentVideoId = arguments?.getString("VIDEO_ID") ?: ""
+
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
         tts = TextToSpeech(requireContext(), this)
-
         setupPoseLandmarker()
 
-        // 권한 체크 후 카메라 실행
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startCamera()
         } else {
@@ -71,93 +79,125 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
         }
     }
 
-    // ★ 1. MediaPipe AI 뇌 초기화 (오류 수정됨)
     private fun setupPoseLandmarker() {
         try {
             val baseOptions = BaseOptions.builder().setModelAssetPath("pose_landmarker_lite.task").build()
-
-            // ★ 요기가 핵심! PoseLandmarker.PoseLandmarkerOptions 라고 정확히 명시했습니다.
             val options = PoseLandmarker.PoseLandmarkerOptions.builder()
                 .setBaseOptions(baseOptions)
-                .setRunningMode(RunningMode.IMAGE)
+                .setRunningMode(RunningMode.LIVE_STREAM)
+                .setResultListener { result, _ -> processPoseResult(result) }
+                .setErrorListener { error -> Log.e("PoseAnalysis", "MediaPipe 에러: ${error.message}") }
                 .build()
-
             poseLandmarker = PoseLandmarker.createFromOptions(requireContext(), options)
-        } catch (e: Exception) {
-            Log.e("PoseAnalysis", "MediaPipe 모델 로드 실패: ${e.message}")
-        }
+        } catch (e: Exception) { Log.e("PoseAnalysis", "모델 로드 실패: ${e.message}") }
     }
 
-    // ★ 2. 카메라 실행
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
-
         cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-
-            // 프리뷰 (화면에 보여주기)
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
+            val cameraProvider = cameraProviderFuture.get()
+            val preview = Preview.Builder().build().also { it.setSurfaceProvider(binding.viewFinder.surfaceProvider) }
+            val imageAnalyzer = ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build().also {
+                it.setAnalyzer(cameraExecutor) { imageProxy -> processImage(imageProxy) }
             }
-
-            // 이미지 분석기 (AI에 프레임 전달)
-            val imageAnalyzer = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also {
-                    it.setAnalyzer(cameraExecutor) { imageProxy ->
-                        processImage(imageProxy)
-                    }
-                }
-
-            val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA // 전면 카메라 사용
-
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
-            } catch (exc: Exception) {
-                Log.e("PoseAnalysis", "카메라 바인딩 실패", exc)
-            }
+                cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_FRONT_CAMERA, preview, imageAnalyzer)
+            } catch (exc: Exception) { Log.e("PoseAnalysis", "바인딩 실패", exc) }
         }, ContextCompat.getMainExecutor(requireContext()))
     }
 
-    // ★ 3. 매 프레임마다 자세 분석
     private fun processImage(imageProxy: ImageProxy) {
         val bitmap = imageProxy.toBitmap()
-        val mpImage = BitmapImageBuilder(bitmap).build()
+        val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+        val matrix = Matrix()
+        matrix.postRotate(rotationDegrees.toFloat())
+        matrix.postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
 
-        // AI가 관절 위치 찾기
-        val result = poseLandmarker?.detect(mpImage)
+        val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        val mpImage = BitmapImageBuilder(rotatedBitmap).build()
 
-        result?.landmarks()?.firstOrNull()?.let { landmarks ->
-
-            // MediaPipe 관절 번호: 11(왼쪽어깨), 13(왼쪽팔꿈치), 15(왼쪽손목)
-            val leftShoulder = landmarks[11]
-            val leftElbow = landmarks[13]
-            val leftWrist = landmarks[15]
-
-            // 팔꿈치 각도 계산 (PostureUtils 활용)
-            val elbowAngle = PostureUtils.getAngle(leftShoulder, leftElbow, leftWrist)
-
-            // 분석 및 피드백 (예: 팔을 쭉 펴는 동작일 때)
-            if (elbowAngle < 150.0) { // 팔이 굽어있다면
-                val msg = "왼쪽 팔을 조금 더 곧게 펴주세요."
-                speakFeedback(msg)
-
-                // UI 스레드에서 화면 텍스트 변경
-                activity?.runOnUiThread {
-                    binding.tvFeedback.text = "팔이 구부러졌어요!"
-                }
-            } else {
-                activity?.runOnUiThread {
-                    binding.tvFeedback.text = "완벽한 자세입니다!"
-                }
-            }
+        // ★ 화면이 닫혔으면 AI 모델에 이미지 전달 안 함
+        if (_binding != null) {
+            poseLandmarker?.detectAsync(mpImage, SystemClock.uptimeMillis())
         }
-        imageProxy.close() // ★ 필수: 다음 프레임을 받기 위해 닫아줌
+        imageProxy.close()
     }
 
-    // ★ 4. TTS 쿨다운 로직
+    private fun processPoseResult(result: PoseLandmarkerResult) {
+        // ★ [핵심 방어 코드 1] 화면이 닫혔으면 즉시 분석 취소
+        if (_binding == null) return
+
+        val rawLandmarks = result.landmarks().firstOrNull()
+
+        if (rawLandmarks.isNullOrEmpty()) {
+            previousLandmarks = null
+            activity?.runOnUiThread {
+                // ★ [핵심 방어 코드 2] 메인 스레드로 넘어오는 찰나의 순간에도 화면이 꺼졌는지 확인
+                if (_binding == null) return@runOnUiThread
+                binding.overlayView.setSmoothedLandmarks(null)
+                binding.tvFeedback.text = "화면에 몸 전체가 나오게 서주세요."
+                speakFeedback("화면에 몸 전체가 나오게 서주세요.")
+            }
+            return
+        }
+
+        val smoothedLandmarks = mutableListOf<MyLandmark>()
+        for (i in rawLandmarks.indices) {
+            val curr = rawLandmarks[i]
+            val smoothedX: Float
+            val smoothedY: Float
+            val smoothedZ: Float
+
+            if (previousLandmarks == null || previousLandmarks!!.size <= i) {
+                smoothedX = curr.x()
+                smoothedY = curr.y()
+                smoothedZ = curr.z()
+            } else {
+                val prev = previousLandmarks!![i]
+                smoothedX = (curr.x() * SMOOTHING_FACTOR) + (prev.x * (1f - SMOOTHING_FACTOR))
+                smoothedY = (curr.y() * SMOOTHING_FACTOR) + (prev.y * (1f - SMOOTHING_FACTOR))
+                smoothedZ = (curr.z() * SMOOTHING_FACTOR) + (prev.z * (1f - SMOOTHING_FACTOR))
+            }
+            smoothedLandmarks.add(MyLandmark(smoothedX, smoothedY, smoothedZ))
+        }
+        previousLandmarks = smoothedLandmarks
+
+        activity?.runOnUiThread {
+            if (_binding == null) return@runOnUiThread
+            binding.overlayView.setSmoothedLandmarks(smoothedLandmarks)
+        }
+
+        if (currentVideoId.isEmpty()) return
+        val videoInfo = StretchingData.myCustomData[currentVideoId]
+        val targetPose = videoInfo?.targetPose ?: return
+
+        val point1 = smoothedLandmarks[targetPose.point1]
+        val point2 = smoothedLandmarks[targetPose.point2]
+        val point3 = smoothedLandmarks[targetPose.point3]
+
+        if (!PostureUtils.isPointInFrame(point1) || !PostureUtils.isPointInFrame(point2) || !PostureUtils.isPointInFrame(point3)) {
+            activity?.runOnUiThread {
+                if (_binding == null) return@runOnUiThread
+                binding.tvFeedback.text = "화면에 몸 전체가 나오게 서주세요."
+                speakFeedback("화면에 몸 전체가 나오게 서주세요.")
+            }
+            return
+        }
+
+        val currentAngle = PostureUtils.getAngle(point1, point2, point3)
+
+        activity?.runOnUiThread {
+            if (_binding == null) return@runOnUiThread
+            if (currentAngle in targetPose.minAngle..targetPose.maxAngle) {
+                binding.tvFeedback.text = "완벽한 자세입니다! (${String.format("%.1f", currentAngle)}°)"
+            } else {
+                binding.tvFeedback.text = "자세를 교정해 주세요. (${String.format("%.1f", currentAngle)}°)"
+                speakFeedback(targetPose.failMessage)
+            }
+        }
+    }
+
     private fun speakFeedback(message: String) {
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastSpokenTime > COOLDOWN_MS) {
@@ -174,10 +214,20 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        // ★ 화면이 꺼질 때 카메라를 강제로 완벽하게 종료시킵니다.
+        try {
+            ProcessCameraProvider.getInstance(requireContext()).get().unbindAll()
+        } catch (e: Exception) {
+            Log.e("PoseAnalysis", "카메라 해제 오류: ${e.message}")
+        }
+
         cameraExecutor.shutdown()
         poseLandmarker?.close()
         tts?.stop()
         tts?.shutdown()
+
+        // 이 코드가 실행된 이후로는 _binding == null 방어 코드들이 작동하여 앱이 안전해집니다.
         _binding = null
     }
 }

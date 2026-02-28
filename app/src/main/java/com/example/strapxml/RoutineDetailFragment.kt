@@ -24,34 +24,37 @@ class RoutineDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 1. ID 받기
         routineId = arguments?.getLong("routineId", -1L) ?: -1L
-
-        // 2. 저장된 'RoutineItem' 목록 불러오기
         val routineList = RoutineFunctions.loadRoutines(requireContext())
-
-        // 해당 ID를 가진 RoutineItem 찾기
         val routineItem = routineList.find { it.id == routineId }
 
         if (routineItem != null) {
-            // (1) 이름 표시
             binding.tvRoutineName.text = routineItem.name
 
-            // (2) 리스트 표시 (RoutineItem 안에 stretchingList가 있으므로 OK!)
-            val adapter = SimpleTextAdapter(routineItem.stretchingList, 2) {
-                // 클릭 동작 없음
-            }
+            val adapter = SimpleTextAdapter(routineItem.stretchingList, 2) {}
             binding.recyclerDetail.layoutManager = LinearLayoutManager(context)
             binding.recyclerDetail.adapter = adapter
         }
 
-        // 3. 시작하기 버튼 (RoutineHistory에 기록)
+        // ★ [수정됨] 시작하기 버튼 -> 리스트를 싸서 영상 상세 화면으로 보냄
         binding.btnStartRoutine.setOnClickListener {
-            val name = binding.tvRoutineName.text.toString()
-            RoutineHistory.saveRoutine(requireContext(), name)
+            val routineName = binding.tvRoutineName.text.toString()
+            val titles = routineItem?.stretchingList
 
-            Toast.makeText(requireContext(), "$name 기록 완료!", Toast.LENGTH_SHORT).show()
-            findNavController().navigateUp()
+            if (titles.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), "루틴에 등록된 운동이 없습니다.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val bundle = Bundle().apply {
+                putStringArrayList("ROUTINE_TITLES", ArrayList(titles))
+                putInt("CURRENT_INDEX", 0) // 첫 번째(0번) 운동부터 시작
+                putString("ROUTINE_NAME", routineName)
+            }
+
+            // 🚨 주의: nav_graph.xml에 지정해둔 'RoutineDetail -> VideoResourcesDetail' 화살표 ID를 적어주세요.
+            // (예: action_routine_detail_to_video_detail)
+            findNavController().navigate(R.id.action_routine_detail_to_video_detail, bundle)
         }
 
         // 4. 수정 버튼
