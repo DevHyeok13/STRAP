@@ -54,7 +54,11 @@
     </fragment>
 
     <fragment android:id="@+id/fragment_history" android:name="com.example.strapxml.HistoryFragment" android:label="스트레칭 기록" />
-    <fragment android:id="@+id/fragment_calendar" android:name="com.example.strapxml.CalendarFragment" android:label="캘린더" />
+    <fragment android:id="@+id/fragment_calendar" android:name="com.example.strapxml.CalendarFragment" android:label="캘린더" >
+        <action
+            android:id="@+id/action_fragment_calendar_to_fragment_routine_detail"
+            app:destination="@id/fragment_routine_detail" />
+    </fragment>
 
     <fragment
         android:id="@+id/fragment_community"

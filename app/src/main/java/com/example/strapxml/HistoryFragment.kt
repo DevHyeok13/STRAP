@@ -27,46 +27,78 @@ class HistoryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 대시보드 텍스트뷰 연결
+        // 1. 방문 횟수 업데이트 및 가져오기
+        HistoryManager.recordVisit(requireContext())
+        val visitCount = HistoryManager.getVisitCount(requireContext())
+
+        // 2. 대시보드 텍스트뷰 연결
         val tvVisitCount = view.findViewById<TextView>(R.id.tv_visit_count)
         val tvTotalTime = view.findViewById<TextView>(R.id.tv_total_time)
         val tvStretchCount = view.findViewById<TextView>(R.id.tv_stretch_count)
 
-        tvVisitCount.text = "15일"
-        tvTotalTime.text = "120분"
-        tvStretchCount.text = "32회"
+        // 3. 루틴 데이터 가져오기
+        val routineHistorySet = RoutineHistory.getHistory(requireContext())
+        var totalDurationSec = 0
+        val routineRecords = mutableListOf<StretchRecord>()
 
-        // 그래프 그리기
+        for (history in routineHistorySet) {
+            val parts = history.split("|")
+            if (parts.size >= 2) {
+                val date = parts[0]
+                val name = parts[1]
+
+                // ★ 수정됨: 복잡한 계산 없이 저장된 '실제 시간'을 바로 꺼내옵니다.
+                // (과거에 저장되어 시간이 기록 안 된 구형 데이터는 임시로 60초 부여)
+                val actualRoutineSec = if (parts.size >= 3) parts[2].toIntOrNull() ?: 60 else 60
+
+                totalDurationSec += actualRoutineSec
+
+                // 분/초 변환
+                val min = actualRoutineSec / 60
+                val sec = actualRoutineSec % 60
+                val durationStr = if (min > 0) "${min}분 ${sec}초" else "${sec}초"
+
+                // 점수를 -1로 설정하여 어댑터에서 일반 루틴으로 인식하게 함
+                routineRecords.add(StretchRecord(name, date, durationStr, -1))
+            }
+        }
+
+        // 날짜순(최신순)으로 정렬
+        val sortedRoutineRecords = routineRecords.sortedByDescending { it.date }
+
+        // 4. 대시보드 갱신
+        tvVisitCount.text = "${visitCount}일"
+        tvStretchCount.text = "${routineHistorySet.size}회"
+        tvTotalTime.text = "${totalDurationSec / 60}분"
+
+        // 5. 자세 분석 기록 가져오기 및 차트 그리기
+        val poseRecords = HistoryManager.getRecords(requireContext())
         val lineChart = view.findViewById<LineChart>(R.id.line_chart_score)
-        setupLineChart(lineChart)
+        setupLineChart(lineChart, poseRecords)
 
+        // 6. 리사이클러뷰 각각 연결
+        val rvRoutineHistory = view.findViewById<RecyclerView>(R.id.rv_routine_history)
+        rvRoutineHistory.layoutManager = LinearLayoutManager(requireContext())
+        rvRoutineHistory.adapter = StretchHistoryAdapter(sortedRoutineRecords)
 
-        // 스트레칭 기록 리스트 연결
-        val rvHistory = view.findViewById<RecyclerView>(R.id.rv_stretch_history)
-
-        // 확인용 가짜 데이터
-        val dummyData = listOf(
-            StretchRecord("거북목 교정 스트레칭", "2026.02.22 오후 7:30", "15분"),
-            StretchRecord("허리 통증 완화 스트레칭", "2026.02.21 오후 8:00", "20분"),
-            StretchRecord("전신 릴렉스 요가", "2026.02.20 오전 9:00", "30분"),
-            StretchRecord("어깨 뭉침 풀기", "2026.02.19 오후 10:15", "10분")
-        )
-
-        // 리사이클러뷰 설정 (세로로 나열하도록 매니저 설정 + 어댑터 장착)
-        rvHistory.layoutManager = LinearLayoutManager(requireContext())
-        rvHistory.adapter = StretchHistoryAdapter(dummyData)
+        val rvPoseHistory = view.findViewById<RecyclerView>(R.id.rv_pose_history)
+        rvPoseHistory.layoutManager = LinearLayoutManager(requireContext())
+        rvPoseHistory.adapter = StretchHistoryAdapter(poseRecords)
     }
 
-    // 그래프 설정 함수
-    private fun setupLineChart(lineChart: LineChart) {
+    private fun setupLineChart(lineChart: LineChart, historyList: List<StretchRecord>) {
         val entries = ArrayList<Entry>()
-        entries.add(Entry(1f, 60f))
-        entries.add(Entry(2f, 75f))
-        entries.add(Entry(3f, 82f))
-        entries.add(Entry(4f, 90f))
-        entries.add(Entry(5f, 96f))
+        val recentScores = historyList.take(5).reversed()
 
-        val dataSet = LineDataSet(entries, "자세 분석 점수")
+        if (recentScores.isNotEmpty()) {
+            for ((index, record) in recentScores.withIndex()) {
+                entries.add(Entry((index + 1).toFloat(), record.score.toFloat()))
+            }
+        } else {
+            entries.add(Entry(1f, 0f))
+        }
+
+        val dataSet = LineDataSet(entries, "최근 5회 정확도")
         dataSet.color = Color.parseColor("#4CAF50")
         dataSet.lineWidth = 3f
         dataSet.circleRadius = 5f
@@ -81,10 +113,10 @@ class HistoryFragment : Fragment() {
         lineChart.legend.isEnabled = false
         lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
         lineChart.xAxis.setDrawGridLines(false)
+        lineChart.xAxis.granularity = 1f
         lineChart.axisRight.isEnabled = false
         lineChart.axisLeft.axisMinimum = 0f
         lineChart.axisLeft.axisMaximum = 100f
-
-        // lineChart.animateX(1000) 애니메이션 적용하고싶은면 쓰기
+        lineChart.invalidate()
     }
 }

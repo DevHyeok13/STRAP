@@ -31,33 +31,34 @@ class RoutineDetailFragment : Fragment() {
         if (routineItem != null) {
             binding.tvRoutineName.text = routineItem.name
 
+            // ★ 수정됨: stretchingList는 이미 글자(String)들이므로 그대로 어댑터에 넣습니다.
             val adapter = SimpleTextAdapter(routineItem.stretchingList, 2) {}
             binding.recyclerDetail.layoutManager = LinearLayoutManager(context)
             binding.recyclerDetail.adapter = adapter
         }
 
-        // ★ [수정됨] 시작하기 버튼 -> 리스트를 싸서 영상 상세 화면으로 보냄
         binding.btnStartRoutine.setOnClickListener {
             val routineName = binding.tvRoutineName.text.toString()
-            val titles = routineItem?.stretchingList
+            val exercises = routineItem?.stretchingList
 
-            if (titles.isNullOrEmpty()) {
+            if (exercises.isNullOrEmpty()) {
                 Toast.makeText(requireContext(), "루틴에 등록된 운동이 없습니다.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             val bundle = Bundle().apply {
-                putStringArrayList("ROUTINE_TITLES", ArrayList(titles))
-                putInt("CURRENT_INDEX", 0) // 첫 번째(0번) 운동부터 시작
+                // ★ 수정됨: exercises 자체가 String 리스트이므로 매핑(map) 없이 바로 넘깁니다.
+                putStringArrayList("ROUTINE_TITLES", ArrayList(exercises))
+                putInt("CURRENT_INDEX", 0)
                 putString("ROUTINE_NAME", routineName)
+
+                // 루틴 실제 소요 시간 측정을 위한 시작 시간 기록
+                putLong("ROUTINE_START_TIME", System.currentTimeMillis())
             }
 
-            // 🚨 주의: nav_graph.xml에 지정해둔 'RoutineDetail -> VideoResourcesDetail' 화살표 ID를 적어주세요.
-            // (예: action_routine_detail_to_video_detail)
             findNavController().navigate(R.id.action_routine_detail_to_video_detail, bundle)
         }
 
-        // 4. 수정 버튼
         binding.btnEdit.setOnClickListener {
             val bundle = Bundle().apply { putLong("routineId", routineId) }
             findNavController().navigate(R.id.action_detail_to_add, bundle)

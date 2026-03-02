@@ -1,5 +1,6 @@
 package com.example.strapxml
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -9,6 +10,7 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
@@ -30,9 +32,19 @@ class VideoResourcesDetail : Fragment() {
     private var routineName = ""
     private var currentStretchingItem: StretchingItem? = null
 
-    // ★ 타이머를 위한 변수들
+    // 인터벌 타이머를 위한 변수들
+    private enum class TimerState { IDLE, WORK, REST, FINISHED }
+    private var currentState = TimerState.IDLE
+
     private var isTimerRunning = false
-    private var timeSeconds = 0
+    private var timeLeft = 30
+
+    // 사용자 설정값 (기본값)
+    private var workTime = 30
+    private var restTime = 10
+    private var totalSets = 5
+    private var currentSet = 1
+
     private val timerHandler = Handler(Looper.getMainLooper())
     private lateinit var timerRunnable: Runnable
 
@@ -47,35 +59,59 @@ class VideoResourcesDetail : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // ★ 타이머 Runnable 초기화
+        // 타이머 Runnable 초기화
         timerRunnable = object : Runnable {
             override fun run() {
                 if (isTimerRunning) {
-                    timeSeconds++
+                    if (timeLeft > 0) {
+                        timeLeft--
+                    } else {
+                        when (currentState) {
+                            TimerState.WORK -> {
+                                if (currentSet < totalSets) {
+                                    currentState = TimerState.REST
+                                    timeLeft = restTime
+                                } else {
+                                    currentState = TimerState.FINISHED
+                                    isTimerRunning = false
+                                    binding.btnTimerStart.text = "완료"
+                                    Toast.makeText(requireContext(), "수고하셨습니다! 운동 완료!", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            TimerState.REST -> {
+                                currentState = TimerState.WORK
+                                currentSet++
+                                timeLeft = workTime
+                            }
+                            else -> {}
+                        }
+                    }
                     updateTimerUI()
-                    timerHandler.postDelayed(this, 1000)
+
+                    if (currentState != TimerState.FINISHED) {
+                        timerHandler.postDelayed(this, 1000)
+                    }
                 }
             }
         }
 
-        // 타이머 버튼 클릭 이벤트
         binding.btnTimerStart.setOnClickListener {
-            if (isTimerRunning) {
-                pauseTimer()
-            } else {
-                startTimer()
-            }
+            if (currentState == TimerState.FINISHED) resetTimer()
+            else if (isTimerRunning) pauseTimer()
+            else startTimer()
         }
 
-        binding.btnTimerReset.setOnClickListener {
-            resetTimer()
+        binding.btnTimerReset.setOnClickListener { resetTimer() }
+
+        // ★ 설정 버튼 클릭 -> 팝업 띄우기
+        binding.btnTimeSetting.setOnClickListener {
+            showTimeSettingDialog()
         }
 
-        // 1. 전달받은 데이터 확인
+        // 전달받은 데이터 확인
         routineTitles = arguments?.getStringArrayList("ROUTINE_TITLES")
 
         if (routineTitles != null && routineTitles!!.isNotEmpty()) {
-            // [루틴 모드]
             isRoutineMode = true
             currentIndex = arguments?.getInt("CURRENT_INDEX", 0) ?: 0
             routineName = arguments?.getString("ROUTINE_NAME") ?: ""
@@ -87,7 +123,6 @@ class VideoResourcesDetail : Fragment() {
             loadRoutineExercise(currentIndex)
 
         } else {
-            // [일반 모드]
             isRoutineMode = false
             binding.btnPrev.visibility = View.INVISIBLE
             binding.btnNext.visibility = View.INVISIBLE
@@ -101,19 +136,19 @@ class VideoResourcesDetail : Fragment() {
             item?.let { bindData(it) }
         }
 
-        // ==========================================
-        // 하단 버튼 클릭 이벤트 설정
-        // ==========================================
-
         binding.btnNext.setOnClickListener {
             if (isRoutineMode && routineTitles != null) {
                 if (currentIndex < routineTitles!!.size - 1) {
                     currentIndex++
                     loadRoutineExercise(currentIndex)
                     updateButtonStates()
-                    // ★ resetTimer() 제거됨 -> 다음 운동으로 넘어가도 시간이 계속 유지(누적)됩니다!
                 } else {
-                    RoutineHistory.saveRoutine(requireContext(), routineName)
+                    // 루틴 완료 시, 실제 걸린 시간 계산 (현재시간 - 시작시간)
+                    val startTime = arguments?.getLong("ROUTINE_START_TIME", System.currentTimeMillis()) ?: System.currentTimeMillis()
+                    val actualDurationSec = ((System.currentTimeMillis() - startTime) / 1000).toInt() // 초 단위 변환
+
+                    // 계산된 실제 소요 시간을 함께 저장합니다!
+                    RoutineHistory.saveRoutine(requireContext(), routineName, actualDurationSec)
                     Toast.makeText(requireContext(), "🎉 '$routineName' 루틴 완료! 기록되었습니다.", Toast.LENGTH_LONG).show()
                     findNavController().navigateUp()
                 }
@@ -126,7 +161,6 @@ class VideoResourcesDetail : Fragment() {
                     currentIndex--
                     loadRoutineExercise(currentIndex)
                     updateButtonStates()
-                    // ★ resetTimer() 제거됨 -> 이전 운동으로 돌아가도 시간이 초기화되지 않습니다!
                 } else {
                     findNavController().navigateUp()
                 }
@@ -144,12 +178,82 @@ class VideoResourcesDetail : Fragment() {
     }
 
     // ==========================================
-    // ★ 타이머 제어 함수들
+    // ★ 타이머 저장 및 불러오기 로직 (핵심)
     // ==========================================
+    private fun loadTimerSettings(videoId: String) {
+        val prefs = requireContext().getSharedPreferences("TimerSettings", Context.MODE_PRIVATE)
+        // 저장된 값이 없으면 기본값(30, 10, 5)을 가져옴
+        workTime = prefs.getInt("${videoId}_work", 30)
+        restTime = prefs.getInt("${videoId}_rest", 10)
+        totalSets = prefs.getInt("${videoId}_sets", 5)
+
+        // 화면의 텍스트 업데이트
+        binding.tvCurrentSettings.text = "운동 ${workTime}초 | 휴식 ${restTime}초 | ${totalSets}세트"
+
+        // 대기 중일 때 남은 시간을 바뀐 운동 시간으로 초기화
+        if (currentState == TimerState.IDLE) {
+            timeLeft = workTime
+            updateTimerUI()
+        }
+    }
+
+    private fun saveTimerSettings(videoId: String, newWork: Int, newRest: Int, newSets: Int) {
+        val prefs = requireContext().getSharedPreferences("TimerSettings", Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            putInt("${videoId}_work", newWork)
+            putInt("${videoId}_rest", newRest)
+            putInt("${videoId}_sets", newSets)
+            apply() // 비동기 저장
+        }
+
+        // 변수 업데이트 및 UI 새로고침
+        workTime = newWork
+        restTime = newRest
+        totalSets = newSets
+        binding.tvCurrentSettings.text = "운동 ${workTime}초 | 휴식 ${restTime}초 | ${totalSets}세트"
+        resetTimer() // 설정이 바뀌었으므로 타이머를 처음 상태로 되돌림
+    }
+
+    private fun showTimeSettingDialog() {
+        // 팝업창 레이아웃 연결
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.stretching_timer_setting, null)
+        val etWork = dialogView.findViewById<EditText>(R.id.et_dialog_work)
+        val etRest = dialogView.findViewById<EditText>(R.id.et_dialog_rest)
+        val etSets = dialogView.findViewById<EditText>(R.id.et_dialog_sets)
+
+        // 팝업창 열릴 때 현재 설정값 채워놓기
+        etWork.setText(workTime.toString())
+        etRest.setText(restTime.toString())
+        etSets.setText(totalSets.toString())
+
+        android.app.AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .setPositiveButton("저장") { _, _ ->
+                val newWork = etWork.text.toString().toIntOrNull() ?: 30
+                val newRest = etRest.text.toString().toIntOrNull() ?: 10
+                val newSets = etSets.text.toString().toIntOrNull() ?: 5
+
+                currentStretchingItem?.let { item ->
+                    saveTimerSettings(item.videoId, newWork, newRest, newSets)
+                    Toast.makeText(context, "설정이 저장되었습니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("취소", null)
+            .show()
+    }
+    // ==========================================
+
     private fun startTimer() {
+        if (currentState == TimerState.IDLE) {
+            currentSet = 1
+            timeLeft = workTime
+            currentState = TimerState.WORK
+        }
+
         isTimerRunning = true
         binding.btnTimerStart.text = "일시정지"
-        timerHandler.post(timerRunnable)
+        updateTimerUI()
+        timerHandler.postDelayed(timerRunnable, 1000)
     }
 
     private fun pauseTimer() {
@@ -160,18 +264,40 @@ class VideoResourcesDetail : Fragment() {
 
     private fun resetTimer() {
         isTimerRunning = false
-        timeSeconds = 0
+        timerHandler.removeCallbacks(timerRunnable)
+
+        currentState = TimerState.IDLE
+        timeLeft = workTime
+        currentSet = 1
+
         binding.btnTimerStart.text = "시작"
         updateTimerUI()
-        timerHandler.removeCallbacks(timerRunnable)
     }
 
     private fun updateTimerUI() {
-        val minutes = timeSeconds / 60
-        val seconds = timeSeconds % 60
+        val minutes = timeLeft / 60
+        val seconds = timeLeft % 60
         binding.tvTimerDisplay.text = String.format("%02d:%02d", minutes, seconds)
+
+        when (currentState) {
+            TimerState.IDLE -> {
+                binding.tvTimerStatus.text = "대기 중"
+                binding.tvTimerStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray))
+            }
+            TimerState.WORK -> {
+                binding.tvTimerStatus.text = "운동 중 ($currentSet / $totalSets 세트)"
+                binding.tvTimerStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+            }
+            TimerState.REST -> {
+                binding.tvTimerStatus.text = "휴식 중 ($currentSet / $totalSets 세트)"
+                binding.tvTimerStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark))
+            }
+            TimerState.FINISHED -> {
+                binding.tvTimerStatus.text = "완료!"
+                binding.tvTimerStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark))
+            }
+        }
     }
-    // ==========================================
 
     private fun loadRoutineExercise(index: Int) {
         val title = routineTitles!![index]
@@ -185,6 +311,9 @@ class VideoResourcesDetail : Fragment() {
 
     private fun bindData(stretchingItem: StretchingItem) {
         currentStretchingItem = stretchingItem
+
+        // ★ [핵심] 영상(스트레칭)이 바뀔 때마다 해당 스트레칭의 타이머 설정을 불러옴
+        loadTimerSettings(stretchingItem.videoId)
 
         binding.tvDetailTitle.text = stretchingItem.name
         binding.tvDetailDesc.text = stretchingItem.description
@@ -208,16 +337,18 @@ class VideoResourcesDetail : Fragment() {
 
         if (currentIndex == 0) {
             binding.btnPrev.text = "루틴 취소"
+            binding.btnPrev.backgroundTintList = ContextCompat.getColorStateList(requireContext(), android.R.color.holo_red_light)
         } else {
             binding.btnPrev.text = "이전 운동"
+            binding.btnPrev.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#9E9E9E"))
         }
 
         if (currentIndex == routineTitles!!.size - 1) {
             binding.btnNext.text = "루틴 완료"
-            binding.btnNext.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_light))
+            binding.btnNext.backgroundTintList = ContextCompat.getColorStateList(requireContext(), android.R.color.holo_blue_light)
         } else {
             binding.btnNext.text = "다음 운동"
-            binding.btnNext.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.transparent))
+            binding.btnNext.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#6200EE"))
         }
     }
 

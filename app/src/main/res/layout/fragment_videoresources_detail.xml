@@ -22,10 +22,10 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <View
-        android:id="@+id/divider"
+        android:id="@+id/divider_header"
         android:layout_width="0dp"
-        android:layout_height="1dp"
-        android:background="#E0E0E0"
+        android:layout_height="2dp"
+        android:background="#CCCCCC"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_detail_header" />
@@ -37,51 +37,53 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/divider">
+        app:layout_constraintTop_toBottomOf="@id/divider_header">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="32dp"> <FrameLayout
-            android:id="@+id/layout_video_launcher"
-            android:layout_width="0dp"
-            android:layout_height="250dp"
-            android:background="#000000"
-            android:clickable="true"
-            android:focusable="true"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:paddingBottom="32dp">
 
-            <ImageView
-                android:id="@+id/iv_detail_thumbnail"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:alpha="0.7"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_launcher_background" />
+            <FrameLayout
+                android:id="@+id/layout_video_launcher"
+                android:layout_width="0dp"
+                android:layout_height="250dp"
+                android:background="#000000"
+                android:clickable="true"
+                android:focusable="true"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
-            <ImageView
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:layout_gravity="center"
-                android:src="@android:drawable/ic_media_play"
-                app:tint="#FFFFFF" />
+                <ImageView
+                    android:id="@+id/iv_detail_thumbnail"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:alpha="0.7"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_launcher_background" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="50dp"
-                android:shadowColor="#000000"
-                android:shadowDx="1"
-                android:shadowDy="1"
-                android:shadowRadius="2"
-                android:text="유튜브에서 영상 재생"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </FrameLayout>
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_media_play"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="50dp"
+                    android:shadowColor="#000000"
+                    android:shadowDx="1"
+                    android:shadowDy="1"
+                    android:shadowRadius="2"
+                    android:text="유튜브에서 영상 재생"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/tv_detail_title"
@@ -111,6 +113,15 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tv_detail_title" />
 
+            <View
+                android:id="@+id/divider_desc"
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginHorizontal="16dp"
+                android:background="#CCCCCC"
+                app:layout_constraintTop_toBottomOf="@id/tv_detail_desc" />
+
             <LinearLayout
                 android:id="@+id/layout_timer"
                 android:layout_width="match_parent"
@@ -120,13 +131,53 @@
                 android:orientation="vertical"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_detail_desc">
+                app:layout_constraintTop_toBottomOf="@id/divider_desc">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:id="@+id/tv_current_settings"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="운동 30초 | 휴식 10초 | 5세트"
+                        android:textColor="#757575"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
+
+                    <Button
+                        android:id="@+id/btn_time_setting"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="설정 ⚙️"
+                        android:textColor="#2196F3"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <TextView
+                    android:id="@+id/tv_timer_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="대기 중"
+                    android:textColor="#2196F3"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_timer_display"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="00:00"
+                    android:layout_marginTop="8dp"
+                    android:text="00:30"
                     android:textColor="#000000"
                     android:textSize="48sp"
                     android:textStyle="bold" />
@@ -146,32 +197,42 @@
 
                     <Button
                         android:id="@+id/btn_timer_reset"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:backgroundTint="#9E9E9E"
+                        android:textColor="#FFFFFF"
                         android:text="초기화" />
                 </LinearLayout>
             </LinearLayout>
+
+            <View
+                android:id="@+id/divider_timer"
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:layout_marginTop="32dp"
+                android:layout_marginHorizontal="16dp"
+                android:background="#CCCCCC"
+                app:layout_constraintTop_toBottomOf="@id/layout_timer" />
 
             <LinearLayout
                 android:id="@+id/layout_bottom_buttons"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="32dp"
+                android:layout_marginTop="24dp"
                 android:orientation="horizontal"
                 android:weightSum="3"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/layout_timer">
+                app:layout_constraintTop_toBottomOf="@id/divider_timer">
 
                 <Button
                     android:id="@+id/btn_prev"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="4dp"
                     android:layout_weight="1"
+                    android:textColor="#FFFFFF"
                     android:text="이전" />
 
                 <Button
@@ -186,11 +247,11 @@
 
                 <Button
                     android:id="@+id/btn_next"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
                     android:layout_weight="1"
+                    android:textColor="#FFFFFF"
                     android:text="다음" />
 
             </LinearLayout>
