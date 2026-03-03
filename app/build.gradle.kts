@@ -86,15 +86,14 @@ dependencies {
     implementation("androidx.room:room-ktx:$room_version") // 코루틴(비동기) 지원
 
     //자세분석
-    val camerax_version = "1.3.0"
+    val camerax_version = "1.4.0"
     implementation("androidx.camera:camera-core:$camerax_version")
     implementation("androidx.camera:camera-camera2:$camerax_version")
     implementation("androidx.camera:camera-lifecycle:$camerax_version")
     implementation("androidx.camera:camera-view:$camerax_version")
 
     // MediaPipe Pose
-    implementation("com.google.mediapipe:tasks-vision:0.10.0")
-
+    implementation("com.google.mediapipe:tasks-vision:0.10.29")
     // Room 세팅
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
