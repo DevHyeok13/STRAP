@@ -16,6 +16,7 @@ class SignupFragment : Fragment() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
+    private var isIdChecked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,9 +46,38 @@ class SignupFragment : Fragment() {
         val signupBtn = view.findViewById<Button>(R.id.btn_signup_complete)
         val checkBtn = view.findViewById<Button>(R.id.btn_check_duplicate)
 
-        // 중복확인 버튼 (단순 메시지)
+        // 아이디 중복확인
+        idInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                isIdChecked = false
+            }
+        }
+
         checkBtn.setOnClickListener {
-            Toast.makeText(context, "사용 가능한 아이디입니다.", Toast.LENGTH_SHORT).show()
+            val email = idInput.text.toString().trim()
+
+            if (email.isEmpty()) {
+                Toast.makeText(context, "아이디(이메일)를 먼저 입력해주세요.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            db.collection("users")
+                .whereEqualTo("email", email)
+                .get()
+                .addOnSuccessListener { documents ->
+                    if (documents.isEmpty) {
+                        // 결과가 비어있다 = 중복X
+                        Toast.makeText(context, "사용 가능한 아이디입니다! 🥳", Toast.LENGTH_SHORT).show()
+                        isIdChecked = true // 가입 허가 도장 쾅!
+                    } else {
+                        // 중복O
+                        Toast.makeText(context, "이미 사용 중인 아이디입니다. 😭", Toast.LENGTH_SHORT).show()
+                        isIdChecked = false // 가입 불가
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(context, "중복 확인 에러: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
         }
 
         // 회원가입 완료 버튼
@@ -60,8 +90,14 @@ class SignupFragment : Fragment() {
             val gender = genderInput.text.toString().trim()
             val age = ageInput.text.toString().trim()
 
+            // 중복확인 우선
+            if (!isIdChecked) {
+                Toast.makeText(context, "아이디 중복확인을 먼저 진행해주세요.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             // 필수 입력 확인
-            if (email.isEmpty() || password.isEmpty() || nickname.isEmpty() || name.isEmpty()) {
+            if (email.isEmpty() || password.isEmpty() || nicknameInput.text.toString().trim().isEmpty() || nameInput.text.toString().trim().isEmpty()) {
                 Toast.makeText(context, "모든 정보를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
