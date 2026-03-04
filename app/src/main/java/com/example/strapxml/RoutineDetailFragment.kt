@@ -31,11 +31,42 @@ class RoutineDetailFragment : Fragment() {
         if (routineItem != null) {
             binding.tvRoutineName.text = routineItem.name
 
-            // ★ 수정됨: stretchingList는 이미 글자(String)들이므로 그대로 어댑터에 넣습니다.
-            val adapter = SimpleTextAdapter(routineItem.stretchingList, 2) {}
+            // 핵심 수정 부분: 리스트 항목을 클릭했을 때의 동작을 채워 넣었습니다!
+            val adapter = SimpleTextAdapter(routineItem.stretchingList, 2) { clickedItem ->
+
+                // 1. "고양이 자세 (60초)"에서 이름("고양이 자세")만 쏙 빼냅니다.
+                val stretchNameOnly = clickedItem.substringBefore(" (").trim()
+
+                // 2. StretchingData(우리의 자료실)에 이 이름이 있는지 검색합니다.
+                val stretchingItem = StretchingData.getStretchingItemByTitle(stretchNameOnly)
+
+                if (stretchingItem != null) {
+                    // 자료실에 있는 스트레칭인 경우 -> 영상 화면으로 이동!
+                    val bundle = Bundle().apply {
+                        putString("videoId", stretchingItem.videoId)
+                        putString("title", stretchingItem.name)
+                        putString("description", stretchingItem.description)
+                    }
+
+                    // 주의: 단일 영상을 보여주는 화면으로 이동하는 화살표 ID를 적어주세요.
+                    // (만약 루틴 시작 버튼과 같은 영상 화면을 쓴다면 R.id.action_routine_detail_to_video_detail 로 둡니다)
+                    findNavController().navigate(R.id.action_routine_detail_to_video_detail, bundle)
+
+                } else {
+                    // 자료실에 없는 AI 맞춤 스트레칭인 경우 -> 안내 메시지만 띄웁니다!
+                    Toast.makeText(
+                        requireContext(),
+                        "[$stretchNameOnly] 영상이 없습니다. 글로 읽고 따라해 보세요!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
             binding.recyclerDetail.layoutManager = LinearLayoutManager(context)
             binding.recyclerDetail.adapter = adapter
         }
+
+        // --- (아래 '루틴 시작' 버튼과 '수정' 버튼 로직은 기존과 동일하게 유지) ---
 
         binding.btnStartRoutine.setOnClickListener {
             val routineName = binding.tvRoutineName.text.toString()
@@ -46,13 +77,14 @@ class RoutineDetailFragment : Fragment() {
                 return@setOnClickListener
             }
 
+            // ✨ 핵심: 걸러내지 않습니다! "고양이 자세 (60초)"에서 이름만 깔끔하게 다듬어서 모두 가져갑니다.
+            val cleanTitles = exercises.map { it.substringBefore(" (").trim() }
+
+            // 영상 유무와 상관없이 모든 리스트를 통째로 다음 화면에 넘깁니다.
             val bundle = Bundle().apply {
-                // ★ 수정됨: exercises 자체가 String 리스트이므로 매핑(map) 없이 바로 넘깁니다.
-                putStringArrayList("ROUTINE_TITLES", ArrayList(exercises))
+                putStringArrayList("ROUTINE_TITLES", ArrayList(cleanTitles))
                 putInt("CURRENT_INDEX", 0)
                 putString("ROUTINE_NAME", routineName)
-
-                // 루틴 실제 소요 시간 측정을 위한 시작 시간 기록
                 putLong("ROUTINE_START_TIME", System.currentTimeMillis())
             }
 
