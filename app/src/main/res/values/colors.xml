@@ -7,4 +7,21 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+
+    <color name="strap_teal">#3AB3A2</color>
+    <color name="strap_teal_light">#7BD0C6</color>
+    <color name="strap_teal_dark">#258578</color>
+    <color name="strap_orange">#F79B5A</color>
+    <color name="strap_orange_light">#FBC29A</color>
+    <color name="bg_main">#F8F9FA</color>
+    <color name="bg_card">#FFFFFF</color>
+    <color name="text_title">#2B3534</color>
+    <color name="text_body">#495057</color>
+    <color name="text_hint">#ADB5BD</color>
+
+    <selector xmlns:android="http://schemas.android.com/apk/res/android">
+        <item android:state_checked="true" android:color="@color/strap_teal" />
+        <item android:color="#E0E0E0" />
+    </selector>
 </resources>
