@@ -19,9 +19,4 @@
     <color name="text_title">#2B3534</color>
     <color name="text_body">#495057</color>
     <color name="text_hint">#ADB5BD</color>
-
-    <selector xmlns:android="http://schemas.android.com/apk/res/android">
-        <item android:state_checked="true" android:color="@color/strap_teal" />
-        <item android:color="#E0E0E0" />
-    </selector>
 </resources>
