@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FA" android:fillViewport="true">
+    android:background="@color/bg_main"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,8 +16,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="스트레칭 기록"
-            android:textColor="#212529"
-            android:textSize="26sp"
+            android:textColor="@color/text_title"
+            android:textSize="24sp"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -31,8 +32,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="@drawable/bg_rounded_white"
-                android:elevation="2dp"
+                android:background="@drawable/bg_signup_box"
                 android:gravity="center"
                 android:orientation="vertical"
                 android:padding="16dp"
@@ -42,7 +42,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="방문 횟수"
-                    android:textColor="#6C757D"
+                    android:textColor="@color/text_hint"
                     android:textSize="12sp" />
 
                 <TextView
@@ -51,7 +51,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="0일"
-                    android:textColor="#4CAF50"
+                    android:textColor="@color/strap_teal"
                     android:textSize="20sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -60,8 +60,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="@drawable/bg_rounded_white"
-                android:elevation="2dp"
+                android:background="@drawable/bg_signup_box"
                 android:gravity="center"
                 android:orientation="vertical"
                 android:padding="16dp"
@@ -70,8 +69,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="총 진행 시간"
-                    android:textColor="#6C757D"
+                    android:text="총 시간"
+                    android:textColor="@color/text_hint"
                     android:textSize="12sp" />
 
                 <TextView
@@ -89,8 +88,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="@drawable/bg_rounded_white"
-                android:elevation="2dp"
+                android:background="@drawable/bg_signup_box"
                 android:gravity="center"
                 android:orientation="vertical"
                 android:padding="16dp">
@@ -99,7 +97,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="루틴 횟수"
-                    android:textColor="#6C757D"
+                    android:textColor="@color/text_hint"
                     android:textSize="12sp" />
 
                 <TextView
@@ -108,7 +106,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="0회"
-                    android:textColor="#FF9800"
+                    android:textColor="@color/strap_orange"
                     android:textSize="20sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -119,7 +117,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="자세 분석 점수 변화"
-            android:textColor="#212529"
+            android:textColor="@color/text_title"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -128,15 +126,15 @@
             android:layout_width="match_parent"
             android:layout_height="220dp"
             android:layout_marginTop="12dp"
-            android:background="#FFFFFF"
-            android:elevation="2dp" />
+            android:background="@drawable/bg_signup_box"
+            android:padding="10dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="최근 완료한 루틴"
-            android:textColor="#212529"
+            android:textColor="@color/text_title"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -152,7 +150,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="최근 자세 분석 내역"
-            android:textColor="#212529"
+            android:textColor="@color/text_title"
             android:textSize="18sp"
             android:textStyle="bold" />
 

@@ -9,7 +9,7 @@
         android:id="@+id/et_search"
         android:layout_width="0dp"
         android:layout_height="50dp"
-        android:background="@drawable/bg_rounded"
+        android:background="@drawable/bg_signup_box"
         android:drawableEnd="@android:drawable/ic_menu_search"
         android:hint="스트레칭 검색..."
         android:paddingStart="16dp"
@@ -40,7 +40,8 @@
                 android:layout_height="wrap_content"
                 android:checked="true"
                 android:text="전체"
-                android:textColor="@android:color/black" />
+                android:textColor="@android:color/black"
+                app:chipBackgroundColor="@color/selector_chip_background" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_waist"
@@ -48,7 +49,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="허리"
-                android:textColor="@android:color/black"/>
+                android:textColor="@android:color/black"
+                app:chipBackgroundColor="@color/selector_chip_background" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_neck"
@@ -56,7 +58,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="목"
-                android:textColor="@android:color/black"/>
+                android:textColor="@android:color/black"
+                app:chipBackgroundColor="@color/selector_chip_background" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_shoulder"
@@ -64,7 +67,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="어깨"
-                android:textColor="@android:color/black"/>
+                android:textColor="@android:color/black"
+                app:chipBackgroundColor="@color/selector_chip_background" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_leg"
@@ -72,7 +76,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="다리"
-                android:textColor="@android:color/black"/>
+                android:textColor="@android:color/black"
+                app:chipBackgroundColor="@color/selector_chip_background" />
 
         </com.google.android.material.chip.ChipGroup>
     </HorizontalScrollView>
