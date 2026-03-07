@@ -180,48 +180,41 @@ class VideoResourcesDetail : Fragment() {
     // ==========================================
     // ★ 타이머 저장 및 불러오기 로직 (핵심)
     // ==========================================
-    private fun loadTimerSettings(videoId: String) {
+    private fun loadTimerSettings(key: String) {
         val prefs = requireContext().getSharedPreferences("TimerSettings", Context.MODE_PRIVATE)
-        // 저장된 값이 없으면 기본값(30, 10, 5)을 가져옴
-        workTime = prefs.getInt("${videoId}_work", 30)
-        restTime = prefs.getInt("${videoId}_rest", 10)
-        totalSets = prefs.getInt("${videoId}_sets", 5)
+        workTime = prefs.getInt("${key}_work", 30)
+        restTime = prefs.getInt("${key}_rest", 10)
+        totalSets = prefs.getInt("${key}_sets", 5)
 
-        // 화면의 텍스트 업데이트
         binding.tvCurrentSettings.text = "운동 ${workTime}초 | 휴식 ${restTime}초 | ${totalSets}세트"
 
-        // 대기 중일 때 남은 시간을 바뀐 운동 시간으로 초기화
         if (currentState == TimerState.IDLE) {
             timeLeft = workTime
             updateTimerUI()
         }
     }
 
-    private fun saveTimerSettings(videoId: String, newWork: Int, newRest: Int, newSets: Int) {
+    private fun saveTimerSettings(key: String, newWork: Int, newRest: Int, newSets: Int) {
         val prefs = requireContext().getSharedPreferences("TimerSettings", Context.MODE_PRIVATE)
         prefs.edit().apply {
-            putInt("${videoId}_work", newWork)
-            putInt("${videoId}_rest", newRest)
-            putInt("${videoId}_sets", newSets)
-            apply() // 비동기 저장
+            putInt("${key}_work", newWork)
+            putInt("${key}_rest", newRest)
+            putInt("${key}_sets", newSets)
+            apply()
         }
 
-        // 변수 업데이트 및 UI 새로고침
         workTime = newWork
         restTime = newRest
         totalSets = newSets
         binding.tvCurrentSettings.text = "운동 ${workTime}초 | 휴식 ${restTime}초 | ${totalSets}세트"
-        resetTimer() // 설정이 바뀌었으므로 타이머를 처음 상태로 되돌림
+        resetTimer()
     }
-
     private fun showTimeSettingDialog() {
-        // 팝업창 레이아웃 연결
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.stretching_timer_setting, null)
         val etWork = dialogView.findViewById<EditText>(R.id.et_dialog_work)
         val etRest = dialogView.findViewById<EditText>(R.id.et_dialog_rest)
         val etSets = dialogView.findViewById<EditText>(R.id.et_dialog_sets)
 
-        // 팝업창 열릴 때 현재 설정값 채워놓기
         etWork.setText(workTime.toString())
         etRest.setText(restTime.toString())
         etSets.setText(totalSets.toString())
@@ -234,13 +227,16 @@ class VideoResourcesDetail : Fragment() {
                 val newSets = etSets.text.toString().toIntOrNull() ?: 5
 
                 currentStretchingItem?.let { item ->
-                    saveTimerSettings(item.videoId, newWork, newRest, newSets)
+                    // 영상이 있으면 videoId, 없으면 이름(name)을 키값으로 사용
+                    val timerKey = if (item.videoId.isNotEmpty()) item.videoId else item.name
+                    saveTimerSettings(timerKey, newWork, newRest, newSets)
                     Toast.makeText(context, "설정이 저장되었습니다.", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("취소", null)
             .show()
     }
+
     // ==========================================
 
     private fun startTimer() {
@@ -302,33 +298,59 @@ class VideoResourcesDetail : Fragment() {
     private fun loadRoutineExercise(index: Int) {
         val title = routineTitles!![index]
         val item = StretchingData.getStretchingItemByTitle(title)
+
         if (item != null) {
+            // 자료실에 있는 경우 정상적으로 데이터를 넘김
             bindData(item)
         } else {
-            Toast.makeText(context, "데이터를 찾을 수 없습니다: $title", Toast.LENGTH_SHORT).show()
+            // 자료실에 없는 AI 맞춤 동작인 경우! 가짜 아이템을 만들어서 넘겨줍니다.
+            val aiCustomItem = StretchingItem(
+                id = -1,
+                name = title,
+                description = "AI 트레이너 맞춤 추천 스트레칭입니다.\n\n아쉽게도 전용 영상은 없지만, 동작의 이름을 보고 타이머에 맞춰 천천히 몸을 풀어보세요!",
+                category = "AI 맞춤",
+                videoId = "", // 비디오 ID를 비워둡니다.
+                imageRes = 0,
+                imageUrl = "" // 이미지 없음
+            )
+            bindData(aiCustomItem)
         }
     }
 
     private fun bindData(stretchingItem: StretchingItem) {
         currentStretchingItem = stretchingItem
 
-        // ★ [핵심] 영상(스트레칭)이 바뀔 때마다 해당 스트레칭의 타이머 설정을 불러옴
-        loadTimerSettings(stretchingItem.videoId)
+        // 영상이 있으면 videoId, 없으면 이름(name)을 식별 키로 사용
+        val timerKey = if (stretchingItem.videoId.isNotEmpty()) stretchingItem.videoId else stretchingItem.name
+        loadTimerSettings(timerKey)
 
         binding.tvDetailTitle.text = stretchingItem.name
         binding.tvDetailDesc.text = stretchingItem.description
 
+        // 1. 썸네일 이미지 처리
         if (stretchingItem.imageUrl.isNotEmpty()) {
             Glide.with(this)
                 .load(stretchingItem.imageUrl)
                 .placeholder(R.drawable.ic_launcher_background)
                 .error(android.R.color.darker_gray)
                 .into(binding.ivDetailThumbnail)
+        } else {
+            // 영상이 없는 동작일 경우 기본 이미지(아이콘 등)를 보여줍니다.
+            binding.ivDetailThumbnail.setImageResource(R.drawable.ic_launcher_foreground)
         }
 
-        val youtubeUrl = "https://www.youtube.com/watch?v=${stretchingItem.videoId}"
-        binding.layoutVideoLauncher.setOnClickListener {
-            showVideoInBrowser(youtubeUrl)
+        // 2. 비디오 및 자세 분석 버튼 처리
+        if (stretchingItem.videoId.isNotEmpty()) {
+            // 영상이 있으면 클릭 활성화 및 자세 분석 버튼 보이기
+            binding.btnPoseAnalysis.visibility = View.VISIBLE
+            val youtubeUrl = "https://www.youtube.com/watch?v=${stretchingItem.videoId}"
+            binding.layoutVideoLauncher.setOnClickListener {
+                showVideoInBrowser(youtubeUrl)
+            }
+        } else {
+            // 영상이 없으면 클릭을 막고, 자세 분석 버튼을 숨깁니다.
+            binding.layoutVideoLauncher.setOnClickListener(null)
+            binding.btnPoseAnalysis.visibility = View.GONE
         }
     }
 
