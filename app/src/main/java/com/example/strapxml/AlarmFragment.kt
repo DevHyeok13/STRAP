@@ -38,13 +38,32 @@ class AlarmFragment : Fragment() {
         // 1. 저장된 알람 불러오기
         alarmList = AlarmFunctions.loadAlarms(requireContext())
 
-        adapter = AlarmAdapter(alarmList) { item, position ->
-            // 수정 시 ID를 넘김
-            val bundle = Bundle().apply {
-                putLong("alarmId", item.id)
+        // [수정됨] 어댑터 생성 시 매개변수 추가 (스위치 조작 이벤트 처리)
+        adapter = AlarmAdapter(
+            items = alarmList,
+            onClick = { item, position ->
+                // 수정 시 ID를 넘김
+                val bundle = Bundle().apply {
+                    putLong("alarmId", item.id)
+                }
+                findNavController().navigate(R.id.action_alarm_to_detail, bundle)
+            },
+            onSwitchChanged = { item, isChecked ->
+                // 1. 아이템 상태 업데이트
+                item.isEnabled = isChecked
+
+                // 2. 스위치 상태에 따라 시스템 알람 켜기/끄기
+                if (isChecked) {
+                    AlarmFunctions.registerAlarm(requireContext(), item)
+                } else {
+                    AlarmFunctions.cancelAlarm(requireContext(), item)
+                }
+
+                // 3. 변경된 내역을 기기에 저장 (다음 접속 시에도 유지되도록)
+                AlarmFunctions.saveAlarms(requireContext(), alarmList)
             }
-            findNavController().navigate(R.id.action_alarm_to_detail, bundle)
-        }
+        )
+
         binding.recyclerViewAlarm.layoutManager = LinearLayoutManager(context)
         binding.recyclerViewAlarm.adapter = adapter
 
@@ -67,6 +86,7 @@ class AlarmFragment : Fragment() {
     }
 
     private fun checkPermissions() {
+        // 기존 권한 체크 코드 동일
         val context = requireContext()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {

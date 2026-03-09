@@ -1,10 +1,13 @@
 package com.example.strapxml
 
+import android.content.Context // 추가됨
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo // 추가됨
+import android.view.inputmethod.InputMethodManager // 추가됨
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -20,7 +23,7 @@ class AlarmDetailFragment : Fragment() {
     private var currentId: Long = -1L
     private lateinit var dayViews: List<TextView>
 
-    // [추가됨] 현재 선택된 루틴 ID 저장 변수
+    // 현재 선택된 루틴 ID 저장 변수
     private var selectedRoutineId: Long = -1L
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedState: Bundle?): View {
@@ -31,6 +34,25 @@ class AlarmDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // ==========================================
+        // [핵심 추가] 키보드 완료(엔터) 버튼 처리
+        // ==========================================
+        binding.etAlarmName.setOnEditorActionListener { v, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                // 커서 포커스 해제
+                binding.etAlarmName.clearFocus()
+
+                // 키보드 내리기
+                val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(v.windowToken, 0)
+
+                true
+            } else {
+                false
+            }
+        }
+        // ==========================================
+
         currentId = arguments?.getLong("alarmId", -1L) ?: -1L
 
         val alarmList = AlarmFunctions.loadAlarms(requireContext())
@@ -38,7 +60,7 @@ class AlarmDetailFragment : Fragment() {
 
         dayViews = listOf(binding.btnSun, binding.btnMon, binding.btnTue, binding.btnWed, binding.btnThu, binding.btnFri, binding.btnSat)
 
-        // [추가됨] 루틴 목록 불러오기 & 리사이클러뷰 설정
+        // 루틴 목록 불러오기 & 리사이클러뷰 설정
         val allRoutines = RoutineFunctions.loadRoutines(requireContext())
 
         // 기존 알람이면 저장된 routineId 가져오기, 아니면 -1
@@ -49,8 +71,6 @@ class AlarmDetailFragment : Fragment() {
         }
         binding.recyclerRoutineSelect.layoutManager = LinearLayoutManager(context)
         binding.recyclerRoutineSelect.adapter = routineAdapter
-
-        // --- (아래는 기존 코드와 동일, 저장 부분만 약간 수정) ---
 
         // 초기값 설정
         if (existingItem != null) {
@@ -92,7 +112,7 @@ class AlarmDetailFragment : Fragment() {
                 AlarmFunctions.cancelAlarm(requireContext(), existingItem)
             }
 
-            // [수정됨] routineId = selectedRoutineId 추가
+            // routineId = selectedRoutineId 추가
             val newItem = AlarmItem(
                 id = if (currentId == -1L) System.currentTimeMillis() else currentId,
                 name = name,
@@ -111,7 +131,7 @@ class AlarmDetailFragment : Fragment() {
             findNavController().popBackStack()
         }
 
-        // 삭제 및 취소 버튼 (기존 유지)
+        // 삭제 및 취소 버튼
         binding.btnDelete.setOnClickListener {
             if (existingItem != null) {
                 alarmList.remove(existingItem)

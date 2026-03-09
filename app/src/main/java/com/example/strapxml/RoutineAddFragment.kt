@@ -1,9 +1,12 @@
 package com.example.strapxml
 
+import android.content.Context // 추가됨
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo // 추가됨
+import android.view.inputmethod.InputMethodManager // 추가됨
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
@@ -34,6 +37,25 @@ class RoutineAddFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // ==========================================
+        // [핵심 추가] 루틴 이름 키보드 완료(엔터) 버튼 처리
+        // ==========================================
+        binding.etRoutineName.setOnEditorActionListener { v, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                // 커서 포커스 해제
+                binding.etRoutineName.clearFocus()
+
+                // 키보드 내리기
+                val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(v.windowToken, 0)
+
+                true
+            } else {
+                false
+            }
+        }
+        // ==========================================
 
         // ★ 1. 이전 화면에서 전달받은 ID 확인
         routineId = arguments?.getLong("routineId", -1L) ?: -1L
