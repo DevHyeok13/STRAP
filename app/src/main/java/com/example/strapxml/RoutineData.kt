@@ -27,14 +27,14 @@ object RoutineFunctions {
         }
     }
 
-    // [기존 유지] 저장하기
+    // 저장하기
     fun saveRoutines(context: Context, list: List<RoutineItem>) {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         val json = Gson().toJson(list)
         prefs.edit().putString(KEY_ROUTINES, json).apply()
     }
 
-    // [기존 유지] 루틴 추가하기
+    // 루틴 추가하기
     fun addRoutine(context: Context, name: String, stretchingList: List<String>) {
         val currentList = loadRoutines(context)
         val newRoutine = RoutineItem(
@@ -45,7 +45,7 @@ object RoutineFunctions {
         saveRoutines(context, currentList)
     }
 
-    // ★ [새로 추가] 루틴 수정하기
+    // 루틴 수정하기
     fun updateRoutine(context: Context, id: Long, newName: String, newStretchingList: List<String>) {
         val currentList = loadRoutines(context)
 
@@ -62,5 +62,11 @@ object RoutineFunctions {
             // 변경된 전체 리스트를 다시 저장합니다.
             saveRoutines(context, currentList)
         }
+    }
+    // 루틴 삭제하기
+    fun deleteRoutine(context: Context, id: Long) {
+        val currentList = loadRoutines(context)
+        val newList = currentList.filter { it.id != id }
+        saveRoutines(context, newList)
     }
 }

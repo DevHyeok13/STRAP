@@ -60,10 +60,15 @@ class RoutineAddFragment : Fragment() {
         // ★ 1. 이전 화면에서 전달받은 ID 확인
         routineId = arguments?.getLong("routineId", -1L) ?: -1L
 
-        // ★ 2. ID가 -1L이 아니라면 "수정 모드"로 세팅
+// ★ 2. ID가 -1L이 아니라면 "수정 모드"로 세팅
         if (routineId != -1L) {
             binding.tvTitle.text = "루틴 수정하기" // 타이틀 변경
-
+            binding.btnDelete.visibility = View.VISIBLE
+            binding.btnDelete.setOnClickListener {
+                    RoutineFunctions.deleteRoutine(requireContext(), routineId)
+                    Toast.makeText(context, "루틴이 삭제되었습니다.", Toast.LENGTH_SHORT).show()
+                    findNavController().popBackStack(R.id.fragment_routine, false)
+            }
             // 기존 데이터 불러오기
             val routineList = RoutineFunctions.loadRoutines(requireContext())
             val existingRoutine = routineList.find { it.id == routineId }
@@ -76,6 +81,9 @@ class RoutineAddFragment : Fragment() {
                 selectedList.clear()
                 selectedList.addAll(existingRoutine.stretchingList)
             }
+        } else {
+            // 새로 만들기 모드일 경우 혹시 모르니 버튼을 숨깁니다.
+            binding.btnDelete.visibility = View.GONE
         }
 
         // --- 상단 리스트 (선택된 항목, X 버튼) ---
