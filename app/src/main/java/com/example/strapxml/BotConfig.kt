@@ -1,5 +1,5 @@
 package com.example.strapxml
 
 object BotConfig {
-    const val GEMINI_API_KEY = "your-api"
+    val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
 }
