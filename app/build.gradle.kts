@@ -1,3 +1,5 @@
+import java.util.Properties // ★ 추가됨: 속성 파일을 읽어오기 위한 도구
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -7,11 +9,16 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// 추가됨: local.properties 파일에서 API 키를 읽어와 메모리에 올리는 과정
+val properties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    properties.load(localPropertiesFile.inputStream())
+}
+
 android {
     namespace = "com.example.strapxml"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.strapxml"
@@ -21,6 +28,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 추가됨: 읽어온 API 키를 BuildConfig라는 숨겨진 클래스 안에 변수로 만들어 줌
+        buildConfigField("String", "YOUTUBE_API_KEY", "\"${properties.getProperty("YOUTUBE_API_KEY", "")}\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${properties.getProperty("GEMINI_API_KEY", "")}\"")
     }
 
     buildTypes {
@@ -39,6 +50,7 @@ android {
     buildFeatures {
         compose = true
         viewBinding = true
+        buildConfig = true // 추가됨: BuildConfig 자동 생성 기능 켜기
     }
 }
 
@@ -93,7 +105,8 @@ dependencies {
     implementation("androidx.camera:camera-view:$camerax_version")
 
     // MediaPipe Pose
-    implementation("com.google.mediapipe:tasks-vision:0.10.29")
+    implementation("com.google.mediapipe:tasks-vision:0.10.32")
+
     // Room 세팅
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
