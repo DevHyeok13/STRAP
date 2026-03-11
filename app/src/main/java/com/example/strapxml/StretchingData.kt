@@ -7,8 +7,8 @@ data class TargetPose(
     val minAngle: Double,
     val maxAngle: Double,
     val instruction: String,
-    val minFailMessage: String, // ★ 추가됨: 각도가 minAngle보다 낮을 때의 피드백
-    val maxFailMessage: String  // ★ 추가됨: 각도가 maxAngle보다 높을 때의 피드백
+    val minFailMessage: String, // 추가됨: 각도가 minAngle보다 낮을 때의 피드백
+    val maxFailMessage: String  // 추가됨: 각도가 maxAngle보다 높을 때의 피드백
 )
 
 data class CustomVideoInfo(
