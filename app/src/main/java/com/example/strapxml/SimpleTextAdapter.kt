@@ -16,10 +16,10 @@ class SimpleTextAdapter(
     private val onItemClick: (String) -> Unit
 ) : RecyclerView.Adapter<SimpleTextAdapter.ViewHolder>() {
 
-    // ★ 가지고 계신 XML의 View ID와 똑같이 맞췄습니다.
+    //가지고 계신 XML의 View ID와 똑같이 맞췄습니다.
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textView: TextView = view.findViewById(R.id.tv_name)      // 이름 ID
-        val actionButton: Button = view.findViewById(R.id.btn_action) // 버튼 ID
+        val actionButton: TextView = view.findViewById(R.id.btn_action) // 버튼 ID
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
