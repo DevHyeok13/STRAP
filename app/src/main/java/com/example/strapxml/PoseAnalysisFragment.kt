@@ -49,8 +49,8 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
     private var currentState = AnalysisState.PREPARING
 
     private val TIME_PREPARE = 10
-    private val TIME_ANALYZE = 10
-    private val TIME_REST = 5
+    private val TIME_ANALYZE = 20
+    private val TIME_REST = 10
 
     private var timeLeft = TIME_PREPARE
     private var currentPoseIndex = 0
@@ -60,7 +60,7 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
     private var totalFramesAnalyzed = 0
 
-    // ★ 변경: 부분 점수 누적용 변수와 오차 한계치(40도) 설정
+    // 부분 점수 누적용 변수와 오차 한계치(40도) 설정
     private var totalAccumulatedScore = 0.0
     private val MAX_TOLERANCE_ANGLE = 40.0
 
@@ -236,7 +236,7 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
         speakOut("모든 분석이 완료되었습니다. 수고하셨습니다.")
 
-        // ★ 변경: (총 누적 점수 / 분석 프레임 수)로 100점 만점 평균 점수 도출
+        // (총 누적 점수 / 분석 프레임 수)로 100점 만점 평균 점수 도출
         val score = if (totalFramesAnalyzed > 0) {
             (totalAccumulatedScore / totalFramesAnalyzed).toInt()
         } else {
@@ -347,7 +347,6 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             val targetPoses = StretchingData.myCustomData[currentVideoId]?.targetPoses ?: return
             if (targetPoses.isEmpty() || currentPoseIndex >= targetPoses.size) return
 
-            totalFramesAnalyzed++
 
             val currentTargetPose = targetPoses[currentPoseIndex]
             var isCorrect = true
@@ -357,8 +356,10 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             val p2 = smoothedLandmarks[currentTargetPose.point2]
             val p3 = smoothedLandmarks[currentTargetPose.point3]
 
-            // ★ 변경: 부분 점수 기반 채점 로직 적용
             if (PostureUtils.isPointInFrame(p1) && PostureUtils.isPointInFrame(p2) && PostureUtils.isPointInFrame(p3)) {
+
+                totalFramesAnalyzed++
+
                 val currentAngle = PostureUtils.getAngle(p1, p2, p3)
                 var frameScore = 100.0
 
@@ -387,7 +388,6 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             } else {
                 isCorrect = false
                 currentFeedback = "화면에 전신이 나오게 서주세요."
-                totalAccumulatedScore += 0.0 // 화면 밖이면 0점
             }
 
             liveFeedbackMsg = currentFeedback
