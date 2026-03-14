@@ -31,6 +31,7 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.max
 
 class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
@@ -58,7 +59,10 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
     private lateinit var timerRunnable: Runnable
 
     private var totalFramesAnalyzed = 0
-    private var correctFramesCount = 0
+
+    // ★ 변경: 부분 점수 누적용 변수와 오차 한계치(40도) 설정
+    private var totalAccumulatedScore = 0.0
+    private val MAX_TOLERANCE_ANGLE = 40.0
 
     private var liveFeedbackMsg = "올바른 자세를 유지하세요."
 
@@ -95,18 +99,14 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
 
-        // ★ 기존의 startAnalysisFlow() 대신, 첫 방문인지 확인하는 함수를 먼저 호출합니다.
         checkFirstTimeAndStart()
     }
 
-
     private fun checkFirstTimeAndStart() {
         val prefs = requireContext().getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
-        // 기본값은 true (처음 켰다고 가정)
         val isFirstTime = prefs.getBoolean("isFirstTimePoseAnalysis", true)
 
         if (isFirstTime) {
-            // 처음 켰을 때만 다이얼로그(팁)를 띄웁니다.
             AlertDialog.Builder(requireContext())
                 .setTitle("AI 자세 분석 정확도를 높이는 팁")
                 .setMessage("1. 머리부터 발끝까지 전신이 나오게 거리를 조절해 주세요.\n\n" +
@@ -114,17 +114,13 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
                         "3. 스마트폰이 기울어지지 않게 바닥과 수직으로 세워주세요.\n\n" +
                         "4. 몸에 딱 맞는 옷을 입어주세요.")
                 .setPositiveButton("확인하고 시작하기") { _, _ ->
-                    // 다음부터는 안 뜨도록 false로 저장
                     prefs.edit().putBoolean("isFirstTimePoseAnalysis", false).apply()
-
-                    // 유저가 '확인'을 눌렀을 때 비로소 첫 안내 음성과 타이머를 시작합니다.
                     playInitialTts()
                     startAnalysisFlow()
                 }
-                .setCancelable(false) // 바깥 화면을 터치해도 안 꺼지게 막음
+                .setCancelable(false)
                 .show()
         } else {
-            // 처음이 아니라면 곧바로 분석 타이머를 돌립니다.
             startAnalysisFlow()
         }
     }
@@ -136,15 +132,12 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             val prefs = requireContext().getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
             val isFirstTime = prefs.getBoolean("isFirstTimePoseAnalysis", true)
 
-            // 만약 팁 팝업이 떠있는 상태(isFirstTime == true)라면, 여기서 바로 말하지 않고 기다립니다.
-            // 팝업이 안 뜨는 상황(isFirstTime == false)일 때만 앱 켜지자마자 바로 말합니다.
             if (!isFirstTime) {
                 playInitialTts()
             }
         }
     }
 
-    // 첫 안내 멘트를 읽어주는 함수를 따로 분리했습니다.
     private fun playInitialTts() {
         val videoInfo = StretchingData.myCustomData[currentVideoId]
         val prepMsg = videoInfo?.prepInstruction ?: "카메라 앞에 전신이 나오도록 서주세요."
@@ -242,7 +235,13 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
         if (!isAdded || _binding == null) return
 
         speakOut("모든 분석이 완료되었습니다. 수고하셨습니다.")
-        val score = if (totalFramesAnalyzed > 0) ((correctFramesCount.toDouble() / totalFramesAnalyzed) * 100).toInt() else 0
+
+        // ★ 변경: (총 누적 점수 / 분석 프레임 수)로 100점 만점 평균 점수 도출
+        val score = if (totalFramesAnalyzed > 0) {
+            (totalAccumulatedScore / totalFramesAnalyzed).toInt()
+        } else {
+            0
+        }
 
         val targetPoses = StretchingData.myCustomData[currentVideoId]?.targetPoses ?: emptyList()
         val actualWorkDuration = targetPoses.size * TIME_ANALYZE
@@ -308,7 +307,6 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
     }
 
     private fun processPoseResult(result: PoseLandmarkerResult) {
-        // [방어 1] 함수가 시작될 때 이미 화면이 닫혔다면 즉시 종료
         if (_binding == null) return
 
         val rawLandmarks = result.landmarks().firstOrNull()
@@ -316,7 +314,6 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
         if (rawLandmarks.isNullOrEmpty()) {
             previousLandmarks = null
             activity?.runOnUiThread {
-                // [방어 2] 메인 스레드로 진입하는 찰나에 화면이 닫혔을 수 있으므로 다시 검사!
                 if (_binding != null) {
                     binding.overlayView.setSmoothedLandmarks(null)
                 }
@@ -341,7 +338,6 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
         previousLandmarks = smoothedLandmarks
 
         activity?.runOnUiThread {
-            // [방어 3] 뼈대 그리기 전 안전 검사
             if (_binding != null) {
                 binding.overlayView.setSmoothedLandmarks(smoothedLandmarks)
             }
@@ -361,25 +357,42 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             val p2 = smoothedLandmarks[currentTargetPose.point2]
             val p3 = smoothedLandmarks[currentTargetPose.point3]
 
+            // ★ 변경: 부분 점수 기반 채점 로직 적용
             if (PostureUtils.isPointInFrame(p1) && PostureUtils.isPointInFrame(p2) && PostureUtils.isPointInFrame(p3)) {
                 val currentAngle = PostureUtils.getAngle(p1, p2, p3)
+                var frameScore = 100.0
 
                 if (currentAngle < currentTargetPose.minAngle) {
                     isCorrect = false
-                    currentFeedback = currentTargetPose.minFailMessage // 더 펴야 함
+                    currentFeedback = currentTargetPose.minFailMessage
+
+                    val deviation = currentTargetPose.minAngle - currentAngle
+                    frameScore = max(0.0, 100.0 - (deviation / MAX_TOLERANCE_ANGLE) * 100.0)
+
                 } else if (currentAngle > currentTargetPose.maxAngle) {
                     isCorrect = false
-                    currentFeedback = currentTargetPose.maxFailMessage // 덜 구부려야 함
+                    currentFeedback = currentTargetPose.maxFailMessage
+
+                    val deviation = currentAngle - currentTargetPose.maxAngle
+                    frameScore = max(0.0, 100.0 - (deviation / MAX_TOLERANCE_ANGLE) * 100.0)
+
+                } else {
+                    isCorrect = true
+                    currentFeedback = "자세를 잘 유지하고 있습니다!"
+                    frameScore = 100.0
                 }
+
+                totalAccumulatedScore += frameScore
+
             } else {
                 isCorrect = false
                 currentFeedback = "화면에 전신이 나오게 서주세요."
+                totalAccumulatedScore += 0.0 // 화면 밖이면 0점
             }
-            if (isCorrect) correctFramesCount++
+
             liveFeedbackMsg = currentFeedback
 
             activity?.runOnUiThread {
-                // [방어 4] 텍스트 업데이트 전 안전 검사 (이 부분이 튕김의 직접적인 원인이었습니다)
                 if (_binding != null) {
                     binding.tvFeedback.text = "진행 중: ${currentPoseIndex + 1}/${targetPoses.size}단계\n상태: $liveFeedbackMsg\n동작 종료까지: ${timeLeft}초"
 
