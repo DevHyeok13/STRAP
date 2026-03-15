@@ -33,7 +33,7 @@ object StretchingData {
                 TargetPose(
                     point1 = 11, point2 = 23, point3 = 25,  // 코, 어깨 허리 굽힘을 인식하지 못해서 코르 대체하여 각도를 잼
                     minAngle = 88.6, // Colab에서 추출한 1단계 최소 각도 입력
-                    maxAngle = 98.6, // Colab에서 추출한 1단계 최대 각도 입력
+                    maxAngle = 108.6, // Colab에서 추출한 1단계 최대 각도 입력
                     instruction = "1단계. 양손은 어깨너비, 무릎은 골반 너비로 벌리고 등과 허리를 평평하게 펴주세요.",
                     minFailMessage = "허리가 아래로 너무 처졌습니다. 복부에 힘을 주어 등을 평평하게 만들어주세요.",
                     maxFailMessage = "등이 위로 말려있습니다. 시선은 바닥을 향하고 등판을 일직선으로 유지해주세요."
@@ -42,7 +42,7 @@ object StretchingData {
                 TargetPose(
                     point1 = 11, point2 = 23, point3 = 25,
                     minAngle = 89.4, // Colab에서 추출한 2단계 최소 각도 입력
-                    maxAngle = 99.8, // Colab에서 추출한 2단계 최대 각도 입력
+                    maxAngle = 109.8, // Colab에서 추출한 2단계 최대 각도 입력
                     instruction = "2단계. 숨을 내쉬며 시선은 배꼽을 향하고, 등을 천장 쪽으로 최대한 둥글게 말아올리세요.",
                     minFailMessage = "등이 충분히 말리지 않았습니다. 복부를 척추 쪽으로 당기며 허리를 더 동그랗게 끌어올려 주세요.",
                     maxFailMessage = "무게중심이 흔들렸습니다. 팔과 허벅지는 바닥과 수직을 유지한 채 척추만 둥글게 말아주세요."
