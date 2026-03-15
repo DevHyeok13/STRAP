@@ -40,7 +40,7 @@ class PostDetailFragment : Fragment() {
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        // 1. 데이터 받기
+        // 데이터 받기
         val title = arguments?.getString("title") ?: ""
         val content = arguments?.getString("content") ?: ""
         val author = arguments?.getString("author") ?: ""
@@ -48,28 +48,28 @@ class PostDetailFragment : Fragment() {
         val postUid = arguments?.getString("postUid") ?: "" // 글 쓴 사람 ID
         postId = arguments?.getString("postId") ?: ""
 
-        // 2. 화면 표시
+        // 화면 표시
         view.findViewById<TextView>(R.id.tv_detail_title).text = title
         view.findViewById<TextView>(R.id.tv_detail_content).text = content
         view.findViewById<TextView>(R.id.tv_detail_author).text = author
         view.findViewById<TextView>(R.id.tv_detail_date).text = date
 
-        // 3. [삭제 버튼 기능] 내 글일 때만 삭제 버튼 보이기
+        // [삭제 버튼 기능] 내 글일 때만 삭제 버튼 보이기
         val tvDelete = view.findViewById<TextView>(R.id.tv_delete_post)
         val myUid = auth.currentUser?.uid
 
         if (myUid != null && myUid == postUid) {
-            tvDelete.visibility = View.VISIBLE // 내 글이면 보임
+            tvDelete.visibility = View.VISIBLE
 
             tvDelete.setOnClickListener {
                 showDeleteConfirmDialog()
             }
         }
 
-        // 4. 댓글 불러오기
+        // 댓글 불러오기
         loadComments(view)
 
-        // 5. 댓글 등록
+        // 댓글 등록
         val etComment = view.findViewById<EditText>(R.id.et_comment)
         view.findViewById<Button>(R.id.btn_send_comment).setOnClickListener {
             val commentText = etComment.text.toString()
@@ -80,7 +80,7 @@ class PostDetailFragment : Fragment() {
         }
     }
 
-    // ★ 삭제 확인 팝업창 띄우기
+    // 삭제 확인 팝업창 띄우기
     private fun showDeleteConfirmDialog() {
         // requireContext()를 사용해야 프래그먼트에서 안전하게 팝업을 띄웁니다.
         val builder = AlertDialog.Builder(requireContext())
@@ -91,11 +91,11 @@ class PostDetailFragment : Fragment() {
         }
         builder.setNegativeButton("취소", null)
 
-        // ★ .show()가 반드시 있어야 화면에 나타납니다.
+        // .show()가 반드시 있어야 화면에 나타납니다.
         builder.show()
     }
 
-    // ★ 실제 파이어베이스 삭제 요청
+    // 실제 파이어베이스 삭제 요청
     private fun deletePost() {
         db.collection("posts").document(postId)
             .delete()
@@ -107,7 +107,6 @@ class PostDetailFragment : Fragment() {
                 Toast.makeText(context, "삭제 실패", Toast.LENGTH_SHORT).show()
             }
     }
-
     private fun saveComment(content: String, view: View) {
         val uid = auth.currentUser?.uid ?: return
         db.collection("users").document(uid).get().addOnSuccessListener { doc ->
@@ -118,9 +117,20 @@ class PostDetailFragment : Fragment() {
                 "timestamp" to FieldValue.serverTimestamp(),
                 "date" to SimpleDateFormat("MM.dd HH:mm", Locale.KOREA).format(Date())
             )
+
             db.collection("posts").document(postId).collection("comments")
                 .add(commentMap)
-                .addOnSuccessListener { loadComments(view) }
+                .addOnSuccessListener {
+
+                    db.collection("posts").document(postId)
+                        .update("commentCount", FieldValue.increment(1))
+                        .addOnSuccessListener {
+                            loadComments(view)
+                        }
+                        .addOnFailureListener {
+                            Toast.makeText(context, "댓글 수는 올리지 못했습니다.", Toast.LENGTH_SHORT).show()
+                        }
+                }
         }
     }
 

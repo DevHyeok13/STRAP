@@ -60,20 +60,22 @@ class WriteFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            // 1. 내 닉네임 가져오기
+            // 닉네임 가져오기
             db.collection("users").document(uid).get()
                 .addOnSuccessListener { document ->
                     val nickname = document.getString("nickname") ?: "익명"
 
-                    // 2. 게시글 데이터 만들기
+                    // 게시글 데이터 만들기
                     val post = hashMapOf(
                         "title" to title,
                         "content" to content,
                         "author" to nickname,
                         "uid" to uid,
                         "date" to SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.KOREA).format(Date()),
-                        "timestamp" to FieldValue.serverTimestamp(), // 정렬용 시간
-                        "boardType" to boardType // 게시판 구분
+                        "timestamp" to FieldValue.serverTimestamp(),
+                        "boardType" to boardType,
+                        "likeCount" to 0,
+                        "commentCount" to 0
                     )
 
                     // 3. DB에 저장 ('posts' 컬렉션)

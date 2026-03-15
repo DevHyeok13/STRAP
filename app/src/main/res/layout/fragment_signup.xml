@@ -17,7 +17,7 @@
         android:layout_marginTop="10dp"
         android:layout_marginBottom="20dp"
         android:contentDescription="앱 로고"
-        android:src="@drawable/logo_strap_not_string"
+        android:src="@drawable/logo_strap_not_string_notremovebg"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

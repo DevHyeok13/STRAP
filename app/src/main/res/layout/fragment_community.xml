@@ -4,17 +4,20 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main"> <TextView
-    android:id="@+id/tv_community_title"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_marginStart="20dp"
-    android:layout_marginTop="24dp"
-    android:text="커뮤니티"
-    android:textColor="@color/text_title" android:textSize="22sp"
-    android:textStyle="bold"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="parent" />
+    android:background="@color/bg_main">
+
+    <TextView
+        android:id="@+id/tv_community_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="24dp"
+        android:text="커뮤니티"
+        android:textColor="@color/text_title"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
         android:id="@+id/layout_tabs"
@@ -76,13 +79,6 @@
             android:orientation="horizontal"
             android:paddingHorizontal="12dp">
 
-            <ImageView
-                android:id="@+id/iv_search_icon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/search_icon"
-                app:tint="@color/text_hint" />
-
             <EditText
                 android:id="@+id/et_search"
                 android:layout_width="0dp"
@@ -97,11 +93,12 @@
                 android:textSize="14sp" />
 
             <ImageView
-                android:id="@+id/iv_filter_icon"
+                android:id="@+id/iv_search_icon"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
-                android:src="@drawable/filter_icon"
-                app:tint="@color/strap_orange" />
+                android:src="@drawable/search_icon"
+                app:tint="@color/text_hint" />
+
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

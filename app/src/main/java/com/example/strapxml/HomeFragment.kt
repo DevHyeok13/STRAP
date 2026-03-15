@@ -36,14 +36,14 @@ class HomeFragment : Fragment() {
 
         val welcomeText = view.findViewById<TextView>(R.id.tv_welcome_title)
 
-        // 1. 파이어베이스에서 내 정보(닉네임) 가져오기
+        // 파이어베이스에서 내 정보(닉네임) 가져오기
         val uid = auth.currentUser?.uid
         if (uid != null) {
             db.collection("users").document(uid).get()
                 .addOnSuccessListener { document ->
                     if (document != null && document.exists()) {
                         val nickname = document.getString("nickname")
-                        welcomeText.text = "${nickname}님,\n오늘도 건강해져 볼까요?"
+                        welcomeText.text = "\"${nickname}\"님!\n오늘도 건강해져 볼까요?"
                     }
                 }
                 .addOnFailureListener {
@@ -51,7 +51,7 @@ class HomeFragment : Fragment() {
                 }
         }
 
-        // 2. 각 카드 메뉴 클릭 시 화면 이동
+        // 각 카드 메뉴 클릭 시 화면 이동
         view.findViewById<CardView>(R.id.card_chatbot).setOnClickListener {
             findNavController().navigate(R.id.action_home_to_chatbot)
         }
