@@ -51,19 +51,49 @@ class CommunityFragment : Fragment() {
 
         recyclerView.layoutManager = LinearLayoutManager(context)
 
-        adapter = CommunityAdapter(emptyList()) { clickedPost ->
-            val bundle = Bundle().apply {
-                putString("postId", clickedPost.id)
-                putString("title", clickedPost.title)
-                putString("content", clickedPost.content)
-                putString("author", clickedPost.author)
-                putString("postUid", clickedPost.uid)
-                putString("date", clickedPost.date)
-                putInt("likeCount", clickedPost.likeCount)
-                putInt("commentCount", clickedPost.commentCount)
+        // ✅ 수정된 부분: adapter 생성 시 onItemClick과 onDeleteClick 두 가지를 모두 전달합니다.
+        adapter = CommunityAdapter(
+            postList = emptyList(),
+            onItemClick = { clickedPost ->
+                val bundle = Bundle().apply {
+                    putString("postId", clickedPost.id)
+                    putString("title", clickedPost.title)
+                    putString("content", clickedPost.content)
+                    putString("author", clickedPost.author)
+                    putString("postUid", clickedPost.uid)
+                    putString("date", clickedPost.date)
+                    putInt("likeCount", clickedPost.likeCount)
+                    putInt("commentCount", clickedPost.commentCount)
+                }
+                findNavController().navigate(R.id.action_community_to_detail, bundle)
+            },
+            onDeleteClick = { postToDelete ->
+                // 삭제 확인 다이얼로그 띄우기
+                android.app.AlertDialog.Builder(requireContext())
+                    .setTitle("평가 삭제")
+                    .setMessage("작성하신 평가를 삭제하시겠습니까?")
+                    .setPositiveButton("삭제") { _, _ ->
+                        // ID에서 운동 이름 추출 (예: "local_목 스트레칭_2026-04-25" -> "목 스트레칭")
+                        val parts = postToDelete.id.split("_")
+                        val stretchingName = parts.getOrNull(1) ?: ""
+
+                        // Content에서 데이터 복원 (ReviewItem 재생성)
+                        // content 양식: "별점: 5.0점\n내용"
+                        val ratingStr = postToDelete.content.substringAfter("별점: ").substringBefore("점").trim()
+                        val comment = postToDelete.content.substringAfter("\n")
+                        val reviewItem = ReviewItem(ratingStr.toFloatOrNull() ?: 0f, comment, postToDelete.date)
+
+                        // 실제 삭제 수행
+                        ReviewManager.deleteReview(requireContext(), stretchingName, reviewItem)
+                        Toast.makeText(context, "삭제되었습니다.", Toast.LENGTH_SHORT).show()
+
+                        // 화면 리스트 새로고침
+                        loadPosts("review")
+                    }
+                    .setNegativeButton("취소", null)
+                    .show()
             }
-            findNavController().navigate(R.id.action_community_to_detail, bundle)
-        }
+        )
 
         recyclerView.adapter = adapter
 
@@ -127,33 +157,56 @@ class CommunityFragment : Fragment() {
 
     // 데이터 불러오기
     private fun loadPosts(boardType: String) {
-        db.collection("posts")
-            .whereEqualTo("boardType", boardType)
-            .orderBy("timestamp", Query.Direction.DESCENDING)
-            .get()
-            .addOnSuccessListener { result ->
-                val fetchedList = mutableListOf<Post>()
-                for (document in result) {
-                    val id = document.id
-                    val title = document.getString("title") ?: ""
-                    val content = document.getString("content") ?: ""
-                    val author = document.getString("author") ?: "익명"
-                    val uid = document.getString("uid") ?: ""
-                    val date = document.getString("date") ?: ""
+        if (boardType == "review") {
+            // 평가게시판 탭일 경우: 로컬 DB(ReviewManager)에서 가져옴
+            loadLocalReviews()
+        } else {
+            // 자유게시판 탭일 경우: 기존처럼 Firebase에서 가져옴
+            db.collection("posts")
+                .whereEqualTo("boardType", boardType)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener { result ->
+                    val fetchedList = mutableListOf<Post>()
+                    for (document in result) {
+                        val id = document.id
+                        val title = document.getString("title") ?: ""
+                        val content = document.getString("content") ?: ""
+                        val author = document.getString("author") ?: "익명"
+                        val uid = document.getString("uid") ?: ""
+                        val date = document.getString("date") ?: ""
+                        val likeCount = document.getLong("likeCount")?.toInt() ?: 0
+                        val commentCount = document.getLong("commentCount")?.toInt() ?: 0
 
-                    // Firebase에서 숫자(Long)로 저장된 좋아요/댓글 수를 Int로 변환해서 가져옴
-                    // (Firebase에 데이터가 아직 없다면 기본값 0으로 처리)
-                    val likeCount = document.getLong("likeCount")?.toInt() ?: 0
-                    val commentCount = document.getLong("commentCount")?.toInt() ?: 0
-
-                    fetchedList.add(Post(id, title, content, author, uid, date, likeCount, commentCount))
+                        fetchedList.add(Post(id, title, content, author, uid, date, likeCount, commentCount))
+                    }
+                    allPostList = fetchedList
+                    adapter.updateData(allPostList)
                 }
-                allPostList = fetchedList
-                adapter.updateData(allPostList)
-            }
-            .addOnFailureListener {
-                Toast.makeText(context, "데이터 로드 실패", Toast.LENGTH_SHORT).show()
-            }
+                .addOnFailureListener {
+                    Toast.makeText(context, "데이터 로드 실패", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+    private fun loadLocalReviews() {
+        val context = requireContext()
+        val allReviews = ReviewManager.getAllReviews(context) // 앞서 만든 함수
+
+        val fetchedList = allReviews.map { (stretchingName, review) ->
+            Post(
+                id = "local_${stretchingName}_${review.date}", // 임의의 ID
+                title = "[$stretchingName] 평가", // 제목에 운동 이름 표시
+                content = "별점: ${review.rating}점\n${review.comment}", // 내용에 별점과 한줄평
+                author = "나의 후기",
+                uid = "local_user",
+                date = review.date,
+                likeCount = 0,
+                commentCount = 0
+            )
+        }
+
+        allPostList = fetchedList
+        adapter.updateData(allPostList)
     }
 
     private fun updateButtonColors(activeBtn: Button, inactiveBtn: Button) {

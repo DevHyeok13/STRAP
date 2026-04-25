@@ -175,6 +175,12 @@ class VideoResourcesDetail : Fragment() {
                 findNavController().navigate(R.id.action_detail_to_pose, bundle)
             }
         }
+        // 평가하기 버튼 클릭 리스너 추가
+        binding.btnWriteReview.setOnClickListener {
+            // 현재 화면에 표시된 스트레칭의 이름을 가져와서 팝업을 띄웁니다.
+            val currentTitle = binding.tvDetailTitle.text.toString()
+            showReviewDialog(currentTitle)
+        }
     }
 
     // ==========================================
@@ -352,6 +358,8 @@ class VideoResourcesDetail : Fragment() {
             binding.layoutVideoLauncher.setOnClickListener(null)
             binding.btnPoseAnalysis.visibility = View.GONE
         }
+
+
     }
 
     private fun updateButtonStates() {
@@ -388,5 +396,39 @@ class VideoResourcesDetail : Fragment() {
         super.onDestroyView()
         timerHandler.removeCallbacks(timerRunnable)
         _binding = null
+    }
+
+    private fun updateReviewList(stretchingName: String) {
+        val reviews = ReviewManager.getReviews(requireContext(), stretchingName)
+        // TODO: 나중에 ReviewAdapter를 추가해서 열결할거임.
+    }
+
+    private fun showReviewDialog(stretchingName: String) {
+        val builder = android.app.AlertDialog.Builder(requireContext())
+        // LayoutInflater를 변수로 선언하여 명확하게 참조
+        val inflater = LayoutInflater.from(requireContext())
+        val dialogView = inflater.inflate(R.layout.dialog_review, null)
+
+        // findViewById 뒤에 <타입>을 명시하여 'Cannot infer type' 에러 방지
+        val ratingBar = dialogView.findViewById<android.widget.RatingBar>(R.id.ratingBar)
+        val etComment = dialogView.findViewById<android.widget.EditText>(R.id.et_comment)
+
+        builder.setView(dialogView)
+            .setTitle("평가하기") // setTitle 에러 해결
+            .setPositiveButton("등록") { dialog, _ -> // 파라미터 타입 명시
+                val rating = ratingBar.rating
+                val comment = etComment.text.toString()
+
+                if (comment.isNotEmpty()) {
+                    ReviewManager.saveReview(requireContext(), stretchingName, rating, comment)
+                    Toast.makeText(requireContext(), "소중한 평가 감사합니다!", Toast.LENGTH_SHORT).show()
+                    updateReviewList(stretchingName)
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("취소") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 }

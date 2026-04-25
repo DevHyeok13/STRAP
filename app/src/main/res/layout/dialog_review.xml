@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@android:color/white">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="이 운동은 어떠셨나요?"
+        android:textSize="18sp"
+        android:textColor="#333333"
+        android:textStyle="bold"
+        android:textAlignment="center" />
+
+    <RatingBar
+        android:id="@+id/ratingBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:numStars="5"
+        android:stepSize="1.0"
+        android:progressTint="@color/strap_teal" /> <EditText
+    android:id="@+id/et_comment"
+    android:layout_width="match_parent"
+    android:layout_height="120dp"
+    android:layout_marginTop="20dp"
+    android:background="#F5F5F5"
+    android:gravity="top|start"
+    android:hint="운동 후기와 꿀팁을 남겨주세요."
+    android:padding="12dp"
+    android:textColorHint="#999999"
+    android:textColor="#333333"
+    android:textSize="14sp"
+    android:inputType="textMultiLine" />
+
+</LinearLayout>
