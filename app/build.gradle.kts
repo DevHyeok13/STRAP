@@ -1,4 +1,4 @@
-import java.util.Properties // ★ 추가됨: 속성 파일을 읽어오기 위한 도구
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -9,7 +9,6 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-// 추가됨: local.properties 파일에서 API 키를 읽어와 메모리에 올리는 과정
 val properties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
@@ -29,9 +28,30 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 추가됨: 읽어온 API 키를 BuildConfig라는 숨겨진 클래스 안에 변수로 만들어 줌
-        buildConfigField("String", "YOUTUBE_API_KEY", "\"${properties.getProperty("YOUTUBE_API_KEY", "")}\"")
-        buildConfigField("String", "GEMINI_API_KEY", "\"${properties.getProperty("GEMINI_API_KEY", "")}\"")
+        buildConfigField(
+            "String",
+            "YOUTUBE_API_KEY",
+            "\"${properties.getProperty("YOUTUBE_API_KEY", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "GEMINI_API_KEY",
+            "\"${properties.getProperty("GEMINI_API_KEY", "")}\""
+        )
+
+        // 1. C++ 컴파일러 설정
+        externalNativeBuild {
+            cmake {
+                cppFlags("-std=c++17")
+            }
+        }
+    }
+
+    // 2. CMakeLists.txt 경로 지정
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
     }
 
     buildTypes {
@@ -43,14 +63,16 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     buildFeatures {
         compose = true
         viewBinding = true
-        buildConfig = true // 추가됨: BuildConfig 자동 생성 기능 켜기
+        buildConfig = true
     }
 }
 
@@ -95,7 +117,7 @@ dependencies {
     // 안드로이드 공식 내장 DB
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
-    implementation("androidx.room:room-ktx:$room_version") // 코루틴(비동기) 지원
+    implementation("androidx.room:room-ktx:$room_version")
 
     //자세분석
     val camerax_version = "1.4.0"
