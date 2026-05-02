@@ -33,13 +33,16 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 텍스트뷰 연결
+        // 텍스트뷰 및 버튼 연결
         val tvNickname = view.findViewById<TextView>(R.id.tv_info_nickname)
         val tvName = view.findViewById<TextView>(R.id.tv_info_name)
         val tvGender = view.findViewById<TextView>(R.id.tv_info_gender)
         val tvAge = view.findViewById<TextView>(R.id.tv_info_age)
         val tvPhone = view.findViewById<TextView>(R.id.tv_info_phone)
         val btnLogout = view.findViewById<Button>(R.id.btn_logout)
+
+        // 정보 수정 버튼 연결
+        val btnEditProfile = view.findViewById<Button>(R.id.btn_edit_profile)
 
         // 파이어베이스에서 내 정보 가져오기
         val uid = auth.currentUser?.uid
@@ -70,6 +73,16 @@ class ProfileFragment : Fragment() {
                 .addOnFailureListener {
                     Toast.makeText(context, "데이터 로드 실패: ${it.message}", Toast.LENGTH_SHORT).show()
                 }
+        }
+
+        // 내 정보 수정 버튼 클릭 이벤트
+        btnEditProfile.setOnClickListener {
+            // nav_graph.xml에 action_profile_to_edit 화살표가 연결되어 있어야 합니다!
+            try {
+                findNavController().navigate(R.id.action_profile_to_edit)
+            } catch (e: Exception) {
+                Toast.makeText(context, "화면 이동 설정(Navigation)을 확인해주세요.", Toast.LENGTH_SHORT).show()
+            }
         }
 
         // 로그아웃 버튼 클릭
