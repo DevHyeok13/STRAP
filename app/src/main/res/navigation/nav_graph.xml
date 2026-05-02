@@ -51,7 +51,16 @@
             app:destination="@id/fragment_login"
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_profile_to_edit"
+            app:destination="@id/fragment_profile_edit" />
     </fragment>
+
+    <fragment
+        android:id="@+id/fragment_profile_edit"
+        android:name="com.example.strapxml.ProfileEditFragment"
+        android:label="내 정보 수정"
+        tools:layout="@layout/fragment_profile_edit" />
 
     <fragment android:id="@+id/fragment_history" android:name="com.example.strapxml.HistoryFragment" android:label="스트레칭 기록" />
     <fragment android:id="@+id/fragment_calendar" android:name="com.example.strapxml.CalendarFragment" android:label="캘린더" >

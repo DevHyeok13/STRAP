@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.FieldValue
@@ -23,7 +24,8 @@ data class Post(
 
 class CommunityAdapter(
     private var postList: List<Post>,
-    private val onItemClick: (Post) -> Unit
+    private val onItemClick: (Post) -> Unit,
+    private val onDeleteClick: (Post) -> Unit
 ) : RecyclerView.Adapter<CommunityAdapter.PostViewHolder>() {
 
     class PostViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -53,6 +55,18 @@ class CommunityAdapter(
 
         val context = holder.itemView.context
 
+        // 2026/04/25 추가
+        val isLocalReview = post.id.startsWith("local_")
+        // 항목을 길게 눌렀을 때 삭제 다이얼로그 띄우기
+        holder.itemView.setOnLongClickListener {
+            if (isLocalReview) {
+                onDeleteClick(post)
+                true
+            } else {
+                false
+            }
+        }
+
         if (post.isLiked) {
             holder.likes.setTextColor(ContextCompat.getColor(context, R.color.strap_orange))
         } else {
@@ -61,8 +75,13 @@ class CommunityAdapter(
 
         // 4. 하트(좋아요) 클릭 이벤트 설정
         holder.likes.setOnClickListener {
-            post.isLiked = !post.isLiked
 
+            // 2026/04/25 추가, 로컬 데이터라면 좋아요 기능을 막거나 무시함
+            if (isLocalReview) {
+                Toast.makeText(context, "평가 리뷰는 좋아요를 누를 수 없습니다.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            post.isLiked = !post.isLiked
             val db = FirebaseFirestore.getInstance() // 파이어베이스 연결
 
             if (post.isLiked) {
@@ -86,7 +105,12 @@ class CommunityAdapter(
 
         // 전체 아이템 클릭 시 상세 화면으로 이동
         holder.itemView.setOnClickListener {
-            onItemClick(post)
+            // 로컬 리뷰는 상세 페이지가 없으므로 클릭을 막거나 토스트 알림만 띄움
+            if (isLocalReview) {
+                Toast.makeText(context, "자료실에서 해당 운동을 확인해 보세요!", Toast.LENGTH_SHORT).show()
+            } else {
+                onItemClick(post)
+            }
         }
 
         // 댓글 아이콘을 클릭해도 상세 화면으로 이동하도록 설정 (선택 사항)
