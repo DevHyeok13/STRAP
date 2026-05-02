@@ -103,7 +103,7 @@ class VideoResourcesDetail : Fragment() {
 
         binding.btnTimerReset.setOnClickListener { resetTimer() }
 
-        // ★ 설정 버튼 클릭 -> 팝업 띄우기
+        // 설정 버튼 클릭 -> 팝업 띄우기
         binding.btnTimeSetting.setOnClickListener {
             showTimeSettingDialog()
         }
@@ -143,11 +143,9 @@ class VideoResourcesDetail : Fragment() {
                     loadRoutineExercise(currentIndex)
                     updateButtonStates()
                 } else {
-                    // 루틴 완료 시, 실제 걸린 시간 계산 (현재시간 - 시작시간)
                     val startTime = arguments?.getLong("ROUTINE_START_TIME", System.currentTimeMillis()) ?: System.currentTimeMillis()
-                    val actualDurationSec = ((System.currentTimeMillis() - startTime) / 1000).toInt() // 초 단위 변환
+                    val actualDurationSec = ((System.currentTimeMillis() - startTime) / 1000).toInt()
 
-                    // 계산된 실제 소요 시간을 함께 저장합니다!
                     RoutineHistory.saveRoutine(requireContext(), routineName, actualDurationSec)
                     Toast.makeText(requireContext(), "🎉 '$routineName' 루틴 완료! 기록되었습니다.", Toast.LENGTH_LONG).show()
                     findNavController().navigateUp()
@@ -167,8 +165,16 @@ class VideoResourcesDetail : Fragment() {
             }
         }
 
+        // 🚀 수정된 부분: 자세 분석 버튼 클릭 이벤트
         binding.btnPoseAnalysis.setOnClickListener {
             currentStretchingItem?.let { item ->
+
+                // UX 개선: 자세 분석 화면으로 넘어갈 때 타이머가 돌고 있다면 일시 정지시킵니다.
+                if (isTimerRunning) {
+                    pauseTimer()
+                }
+
+                // PoseAnalysisFragment로 VIDEO_ID를 번들에 담아 안전하게 넘깁니다.
                 val bundle = Bundle().apply {
                     putString("VIDEO_ID", item.videoId)
                 }
@@ -177,9 +183,6 @@ class VideoResourcesDetail : Fragment() {
         }
     }
 
-    // ==========================================
-    // ★ 타이머 저장 및 불러오기 로직 (핵심)
-    // ==========================================
     private fun loadTimerSettings(key: String) {
         val prefs = requireContext().getSharedPreferences("TimerSettings", Context.MODE_PRIVATE)
         workTime = prefs.getInt("${key}_work", 30)
@@ -209,6 +212,7 @@ class VideoResourcesDetail : Fragment() {
         binding.tvCurrentSettings.text = "운동 ${workTime}초 | 휴식 ${restTime}초 | ${totalSets}세트"
         resetTimer()
     }
+
     private fun showTimeSettingDialog() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.stretching_timer_setting, null)
         val etWork = dialogView.findViewById<EditText>(R.id.et_dialog_work)
@@ -227,7 +231,6 @@ class VideoResourcesDetail : Fragment() {
                 val newSets = etSets.text.toString().toIntOrNull() ?: 5
 
                 currentStretchingItem?.let { item ->
-                    // 영상이 있으면 videoId, 없으면 이름(name)을 키값으로 사용
                     val timerKey = if (item.videoId.isNotEmpty()) item.videoId else item.name
                     saveTimerSettings(timerKey, newWork, newRest, newSets)
                     Toast.makeText(context, "설정이 저장되었습니다.", Toast.LENGTH_SHORT).show()
@@ -236,8 +239,6 @@ class VideoResourcesDetail : Fragment() {
             .setNegativeButton("취소", null)
             .show()
     }
-
-    // ==========================================
 
     private fun startTimer() {
         if (currentState == TimerState.IDLE) {
@@ -300,18 +301,16 @@ class VideoResourcesDetail : Fragment() {
         val item = StretchingData.getStretchingItemByTitle(title)
 
         if (item != null) {
-            // 자료실에 있는 경우 정상적으로 데이터를 넘김
             bindData(item)
         } else {
-            // 자료실에 없는 AI 맞춤 동작인 경우! 가짜 아이템을 만들어서 넘겨줍니다.
             val aiCustomItem = StretchingItem(
                 id = -1,
                 name = title,
                 description = "AI 트레이너 맞춤 추천 스트레칭입니다.\n\n아쉽게도 전용 영상은 없지만, 동작의 이름을 보고 타이머에 맞춰 천천히 몸을 풀어보세요!",
                 category = "AI 맞춤",
-                videoId = "", // 비디오 ID를 비워둡니다.
+                videoId = "",
                 imageRes = 0,
-                imageUrl = "" // 이미지 없음
+                imageUrl = ""
             )
             bindData(aiCustomItem)
         }
@@ -320,14 +319,12 @@ class VideoResourcesDetail : Fragment() {
     private fun bindData(stretchingItem: StretchingItem) {
         currentStretchingItem = stretchingItem
 
-        // 영상이 있으면 videoId, 없으면 이름(name)을 식별 키로 사용
         val timerKey = if (stretchingItem.videoId.isNotEmpty()) stretchingItem.videoId else stretchingItem.name
         loadTimerSettings(timerKey)
 
         binding.tvDetailTitle.text = stretchingItem.name
         binding.tvDetailDesc.text = stretchingItem.description
 
-        // 1. 썸네일 이미지 처리
         if (stretchingItem.imageUrl.isNotEmpty()) {
             Glide.with(this)
                 .load(stretchingItem.imageUrl)
@@ -335,20 +332,16 @@ class VideoResourcesDetail : Fragment() {
                 .error(android.R.color.darker_gray)
                 .into(binding.ivDetailThumbnail)
         } else {
-            // 영상이 없는 동작일 경우 기본 이미지(아이콘 등)를 보여줍니다.
             binding.ivDetailThumbnail.setImageResource(R.drawable.ic_launcher_foreground)
         }
 
-        // 2. 비디오 및 자세 분석 버튼 처리
         if (stretchingItem.videoId.isNotEmpty()) {
-            // 영상이 있으면 클릭 활성화 및 자세 분석 버튼 보이기
             binding.btnPoseAnalysis.visibility = View.VISIBLE
             val youtubeUrl = "https://www.youtube.com/watch?v=${stretchingItem.videoId}"
             binding.layoutVideoLauncher.setOnClickListener {
                 showVideoInBrowser(youtubeUrl)
             }
         } else {
-            // 영상이 없으면 클릭을 막고, 자세 분석 버튼을 숨깁니다.
             binding.layoutVideoLauncher.setOnClickListener(null)
             binding.btnPoseAnalysis.visibility = View.GONE
         }

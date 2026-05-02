@@ -31,7 +31,6 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.math.max
 
 class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
@@ -41,6 +40,9 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
     private lateinit var cameraExecutor: ExecutorService
     private var poseLandmarker: PoseLandmarker? = null
     private var currentVideoId: String = ""
+
+    // 🚀 새롭게 추가된 3D C++ 엔진
+    private val optimizer = HumanoidOptimizer()
 
     private var previousLandmarks: List<MyLandmark>? = null
     private val SMOOTHING_FACTOR = 0.2f
@@ -59,10 +61,7 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
     private lateinit var timerRunnable: Runnable
 
     private var totalFramesAnalyzed = 0
-
-    // 부분 점수 누적용 변수와 오차 한계치(40도) 설정
     private var totalAccumulatedScore = 0.0
-    private val MAX_TOLERANCE_ANGLE = 40.0
 
     private var liveFeedbackMsg = "올바른 자세를 유지하세요."
 
@@ -85,6 +84,8 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // VideoResourcesDetail에서 넘겨준 ID 받기
         currentVideoId = arguments?.getString("VIDEO_ID") ?: ""
 
         binding.btnBack.setOnClickListener { findNavController().popBackStack() }
@@ -110,9 +111,8 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             AlertDialog.Builder(requireContext())
                 .setTitle("AI 자세 분석 정확도를 높이는 팁")
                 .setMessage("1. 머리부터 발끝까지 전신이 나오게 거리를 조절해 주세요.\n\n" +
-                        "2. 스트레칭 예시 영상과 비슷하게 자세를 잡아주세요.\n\n" +
-                        "3. 스마트폰이 기울어지지 않게 바닥과 수직으로 세워주세요.\n\n" +
-                        "4. 몸에 딱 맞는 옷을 입어주세요.")
+                        "2. 화면에 나타나는 초록색 정답 가이드에 몸을 맞춰주세요.\n\n" +
+                        "3. 스마트폰이 기울어지지 않게 바닥과 수직으로 세워주세요.")
                 .setPositiveButton("확인하고 시작하기") { _, _ ->
                     prefs.edit().putBoolean("isFirstTimePoseAnalysis", false).apply()
                     playInitialTts()
@@ -128,11 +128,8 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             tts?.language = Locale.KOREAN
-
             val prefs = requireContext().getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
-            val isFirstTime = prefs.getBoolean("isFirstTimePoseAnalysis", true)
-
-            if (!isFirstTime) {
+            if (!prefs.getBoolean("isFirstTimePoseAnalysis", true)) {
                 playInitialTts()
             }
         }
@@ -146,17 +143,11 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
     private fun speakOut(text: String, isWarning: Boolean = false) {
         if (tts == null) return
-
-        if (isWarning && tts?.isSpeaking == true) {
-            return
-        }
+        if (isWarning && tts?.isSpeaking == true) return
 
         val currentTime = SystemClock.uptimeMillis()
-
         if (isWarning) {
-            if (text == lastSpokenMsg && (currentTime - lastSpokenTime) < SPEAK_COOLDOWN_MS) {
-                return
-            }
+            if (text == lastSpokenMsg && (currentTime - lastSpokenTime) < SPEAK_COOLDOWN_MS) return
             lastSpokenMsg = text
             lastSpokenTime = currentTime
         }
@@ -189,9 +180,11 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
                             currentPoseIndex = 0
                             timeLeft = TIME_ANALYZE
 
+                            // 🚀 정답 도화지에 첫 번째 동작의 3D 각도를 넘겨서 초록색 졸라맨을 그립니다.
+                            binding.targetOverlayView.targetAngles = targetPoses[currentPoseIndex].targetAngles
+
                             val instruction = targetPoses[currentPoseIndex].instruction
                             speakOut("분석을 시작합니다. $instruction")
-                            binding.tvFeedback.text = "진행 중: ${currentPoseIndex + 1}/${targetPoses.size}단계\n$liveFeedbackMsg\n동작 종료까지: ${timeLeft}초"
                         }
                     }
                     AnalysisState.ANALYZING -> {
@@ -199,8 +192,9 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
                             if (currentPoseIndex < targetPoses.size - 1) {
                                 currentState = AnalysisState.RESTING
                                 timeLeft = TIME_REST
+                                // 휴식 중에는 정답 가이드라인 숨기기
+                                binding.targetOverlayView.targetAngles = null
                                 speakOut("다음 동작을 취해주세요.")
-                                binding.tvFeedback.text = "다음 동작을 준비해주세요.\n남은 준비 시간: ${timeLeft}초"
                             } else {
                                 currentState = AnalysisState.FINISHED
                                 finishAnalysisAndSave()
@@ -210,11 +204,14 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
                     }
                     AnalysisState.RESTING -> {
                         if (timeLeft > 0) {
-                            binding.tvFeedback.text = "다음 동작을 준비하세요.\n남은 준비 시간: ${timeLeft}초"
+                            binding.tvFeedback.text = "다음 동작을 준비하세요.\n남은 휴식 시간: ${timeLeft}초"
                         } else {
                             currentState = AnalysisState.ANALYZING
                             currentPoseIndex++
                             timeLeft = TIME_ANALYZE
+
+                            // 🚀 다음 단계의 동작으로 초록색 졸라맨 변경!
+                            binding.targetOverlayView.targetAngles = targetPoses[currentPoseIndex].targetAngles
 
                             val instruction = targetPoses[currentPoseIndex].instruction
                             speakOut("다음 동작입니다. $instruction")
@@ -233,29 +230,18 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
     private fun finishAnalysisAndSave() {
         if (!isAdded || _binding == null) return
-
         speakOut("모든 분석이 완료되었습니다. 수고하셨습니다.")
 
-        // (총 누적 점수 / 분석 프레임 수)로 100점 만점 평균 점수 도출
-        val score = if (totalFramesAnalyzed > 0) {
-            (totalAccumulatedScore / totalFramesAnalyzed).toInt()
-        } else {
-            0
-        }
-
+        val score = if (totalFramesAnalyzed > 0) (totalAccumulatedScore / totalFramesAnalyzed).toInt() else 0
         val targetPoses = StretchingData.myCustomData[currentVideoId]?.targetPoses ?: emptyList()
         val actualWorkDuration = targetPoses.size * TIME_ANALYZE
         val stretchingName = StretchingData.myCustomData[currentVideoId]?.title ?: "알 수 없는 스트레칭"
 
-        HistoryManager.saveRecord(requireContext(), stretchingName, actualWorkDuration, score)
+        // HistoryManager 로직 유지
+        // HistoryManager.saveRecord(requireContext(), stretchingName, actualWorkDuration, score)
 
         Toast.makeText(requireContext(), "분석 완료! 정확도: ${score}점", Toast.LENGTH_LONG).show()
-
-        try {
-            findNavController().popBackStack(R.id.fragment_video_detail, false)
-        } catch (e: Exception) {
-            Log.e("PoseAnalysis", "화면 이동 중 오류 발생: ${e.message}")
-        }
+        findNavController().popBackStack()
     }
 
     private fun setupPoseLandmarker() {
@@ -284,10 +270,6 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
                 cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_FRONT_CAMERA, preview, imageAnalyzer)
             } catch (exc: Exception) {
                 Log.e("PoseAnalysis", "카메라 바인딩 실패: ${exc.message}")
-                activity?.runOnUiThread {
-                    Toast.makeText(context, "카메라를 사용할 수 없는 상태입니다.", Toast.LENGTH_SHORT).show()
-                    findNavController().popBackStack()
-                }
             }
         }, ContextCompat.getMainExecutor(requireContext()))
     }
@@ -313,14 +295,11 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
         if (rawLandmarks.isNullOrEmpty()) {
             previousLandmarks = null
-            activity?.runOnUiThread {
-                if (_binding != null) {
-                    binding.overlayView.setSmoothedLandmarks(null)
-                }
-            }
+            activity?.runOnUiThread { binding.overlayView.setSmoothedLandmarks(null) }
             return
         }
 
+        // 기존의 스무딩 로직 유지 (사용자 화면의 파란색 선을 부드럽게 그리기 위함)
         val smoothedLandmarks = mutableListOf<MyLandmark>()
         for (i in rawLandmarks.indices) {
             val curr = rawLandmarks[i]
@@ -337,64 +316,33 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
         }
         previousLandmarks = smoothedLandmarks
 
-        activity?.runOnUiThread {
-            if (_binding != null) {
-                binding.overlayView.setSmoothedLandmarks(smoothedLandmarks)
-            }
-        }
+        activity?.runOnUiThread { binding.overlayView.setSmoothedLandmarks(smoothedLandmarks) }
 
+        // 🚀 핵심 교체: C++ 엔진을 활용한 3D 자세 평가
         if (currentState == AnalysisState.ANALYZING && currentVideoId.isNotEmpty()) {
             val targetPoses = StretchingData.myCustomData[currentVideoId]?.targetPoses ?: return
-            if (targetPoses.isEmpty() || currentPoseIndex >= targetPoses.size) return
-
+            if (currentPoseIndex >= targetPoses.size) return
 
             val currentTargetPose = targetPoses[currentPoseIndex]
-            var isCorrect = true
-            var currentFeedback = "자세를 잘 유지하고 있습니다!"
 
-            val p1 = smoothedLandmarks[currentTargetPose.point1]
-            val p2 = smoothedLandmarks[currentTargetPose.point2]
-            val p3 = smoothedLandmarks[currentTargetPose.point3]
+            totalFramesAnalyzed++
 
-            if (PostureUtils.isPointInFrame(p1) && PostureUtils.isPointInFrame(p2) && PostureUtils.isPointInFrame(p3)) {
+            // 1. C++ 엔진 호출: 사용자의 2D 관절을 넘겨서 13개의 3D 각도로 복원
+            val currentUserAngles = optimizer.calculateOptimalAngles(rawLandmarks)
 
-                totalFramesAnalyzed++
+            // 2. 채점기 호출: 사용자의 3D 각도와 정답 3D 각도를 비교
+            val analysisResult = PoseScorer.analyze(currentUserAngles, currentTargetPose)
 
-                val currentAngle = PostureUtils.getAngle(p1, p2, p3)
-                var frameScore = 100.0
+            // 3. 점수 누적 및 피드백 생성
+            totalAccumulatedScore += analysisResult.score
+            liveFeedbackMsg = analysisResult.feedback
 
-                if (currentAngle < currentTargetPose.minAngle) {
-                    isCorrect = false
-                    currentFeedback = currentTargetPose.minFailMessage
-
-                    val deviation = currentTargetPose.minAngle - currentAngle
-                    frameScore = max(0.0, 100.0 - (deviation / MAX_TOLERANCE_ANGLE) * 100.0)
-
-                } else if (currentAngle > currentTargetPose.maxAngle) {
-                    isCorrect = false
-                    currentFeedback = currentTargetPose.maxFailMessage
-
-                    val deviation = currentAngle - currentTargetPose.maxAngle
-                    frameScore = max(0.0, 100.0 - (deviation / MAX_TOLERANCE_ANGLE) * 100.0)
-
-                } else {
-                    isCorrect = true
-                    currentFeedback = "자세를 잘 유지하고 있습니다!"
-                    frameScore = 100.0
-                }
-
-                totalAccumulatedScore += frameScore
-
-            } else {
-                isCorrect = false
-                currentFeedback = "화면에 전신이 나오게 서주세요."
-            }
-
-            liveFeedbackMsg = currentFeedback
+            // 점수가 80점 이상이면 올바른 자세로 간주
+            val isCorrect = analysisResult.score >= 80
 
             activity?.runOnUiThread {
                 if (_binding != null) {
-                    binding.tvFeedback.text = "진행 중: ${currentPoseIndex + 1}/${targetPoses.size}단계\n상태: $liveFeedbackMsg\n동작 종료까지: ${timeLeft}초"
+                    binding.tvFeedback.text = "진행 중: ${currentPoseIndex + 1}/${targetPoses.size}단계\n점수: ${analysisResult.score}점\n$liveFeedbackMsg\n동작 종료까지: ${timeLeft}초"
 
                     if (!isCorrect) {
                         speakOut(liveFeedbackMsg, isWarning = true)
@@ -409,15 +357,7 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
         timerHandler.removeCallbacks(timerRunnable)
         tts?.stop()
         tts?.shutdown()
-
-        cameraExecutor.execute {
-            try {
-                poseLandmarker?.close()
-            } catch (e: Exception) {
-                Log.e("PoseAnalysis", "MediaPipe 종료 중 오류 발생: ${e.message}")
-            }
-        }
-
+        cameraExecutor.execute { poseLandmarker?.close() }
         cameraExecutor.shutdown()
         _binding = null
     }

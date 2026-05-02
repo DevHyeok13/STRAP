@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".PoseAnalysisFragment">
 
+    <!-- 1. 카메라 화면 (맨 밑바닥) -->
     <androidx.camera.view.PreviewView
         android:id="@+id/viewFinder"
         android:layout_width="match_parent"
@@ -16,6 +17,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- 🚀 2. 새롭게 추가됨: 정답 가이드라인(초록색 졸라맨)을 그릴 투명 도화지 -->
+    <com.example.strapxml.TargetPoseOverlayView
+        android:id="@+id/targetOverlayView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 3. 사용자의 현재 자세(MediaPipe 선)를 그릴 기존 도화지 -->
     <com.example.strapxml.OverlayView
         android:id="@+id/overlayView"
         android:layout_width="match_parent"
@@ -26,6 +39,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- 4. 실시간 점수 및 피드백 텍스트 -->
     <TextView
         android:id="@+id/tvFeedback"
         android:layout_width="wrap_content"
@@ -36,10 +50,12 @@
         android:text="자세를 인식 중입니다..."
         android:textColor="@android:color/white"
         android:textSize="20sp"
+        android:gravity="center"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- 5. 이전 버튼 -->
     <Button
         android:id="@+id/btnBack"
         android:layout_width="wrap_content"

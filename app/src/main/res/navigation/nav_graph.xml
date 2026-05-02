@@ -149,6 +149,13 @@
         android:id="@+id/fragment_pose_analysis"
         android:name="com.example.strapxml.PoseAnalysisFragment"
         android:label="자세분석"
-        tools:layout="@layout/fragment_pose_analysis" />
+        tools:layout="@layout/fragment_pose_analysis">
+
+        <argument
+            android:name="videoId"
+            app:argType="string"
+            android:defaultValue="" />
+
+    </fragment>
 
 </navigation>

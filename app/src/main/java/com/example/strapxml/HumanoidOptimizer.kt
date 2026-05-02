@@ -3,35 +3,30 @@ package com.example.strapxml
 import android.util.Log
 
 class HumanoidOptimizer {
+    init { System.loadLibrary("optimizer-lib") }
 
-    // 앱이 실행될 때 우리가 만든 C++ 라이브러리(optimizer-lib)를 메모리에 불러옵니다.
-    init {
-        System.loadLibrary("optimizer-lib")
-    }
-
-    // external 키워드: "이 함수의 진짜 내용은 C++ 파일에 구현되어 있어!" 라고 알려줍니다.
     private external fun runOptimization(landmarks2D: FloatArray): FloatArray
 
-    /**
-     * 실제 앱(PoseAnalysisFragment 등)에서 호출할 메서드입니다.
-     * MediaPipe의 2D 점 리스트를 받아서 C++ 엔진에 던지기 좋게 일렬(FloatArray)로 폅니다.
-     */
-    fun calculateOptimalAngles(poseLandmarks: List<com.google.mediapipe.tasks.components.containers.NormalizedLandmark>): FloatArray {
-
-        // 1. MediaPipe의 X, Y 좌표를 하나의 긴 배열로 만듭니다. (속도 최적화)
-        // 관절이 33개면 X, Y 2개씩 총 66칸의 배열이 생성됩니다.
+    fun calculateOptimalAngles(poseLandmarks: List<com.google.mediapipe.tasks.components.containers.NormalizedLandmark>): OptimizedAngles {
         val flatArray = FloatArray(poseLandmarks.size * 2)
         for (i in poseLandmarks.indices) {
             flatArray[i * 2] = poseLandmarks[i].x()
             flatArray[i * 2 + 1] = poseLandmarks[i].y()
         }
 
-        // 2. C++ 엔진 호출 및 결과 수신!
-        val result3DAngles = runOptimization(flatArray)
+        val rawAngles = runOptimization(flatArray)
 
-        // 3. 로그캣으로 연결 성공 여부 확인
-        Log.d("STRAP_C++_TEST", "C++ 엔진 결과 수신 완료! 첫번째 각도: ${result3DAngles[0]}")
+        if (rawAngles.size < 13) {
+            Log.e("STRAP_C++", "엔진 오류: 데이터가 부족합니다.")
+            return OptimizedAngles() // 기본값 반환
+        }
 
-        return result3DAngles
+        return OptimizedAngles(
+            spinePitch = rawAngles[0],
+            leftShoulderFlex = rawAngles[1], leftShoulderAbd = rawAngles[2], leftElbowFlex = rawAngles[3],
+            rightShoulderFlex = rawAngles[4], rightShoulderAbd = rawAngles[5], rightElbowFlex = rawAngles[6],
+            leftHipFlex = rawAngles[7], leftHipAbd = rawAngles[8], leftKneeFlex = rawAngles[9],
+            rightHipFlex = rawAngles[10], rightHipAbd = rawAngles[11], rightKneeFlex = rawAngles[12]
+        )
     }
 }
