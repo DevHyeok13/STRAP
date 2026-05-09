@@ -16,38 +16,40 @@ class SimpleTextAdapter(
     private val onItemClick: (String) -> Unit
 ) : RecyclerView.Adapter<SimpleTextAdapter.ViewHolder>() {
 
-    //가지고 계신 XML의 View ID와 똑같이 맞췄습니다.
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val textView: TextView = view.findViewById(R.id.tv_name)      // 이름 ID
-        val actionButton: TextView = view.findViewById(R.id.btn_action) // 버튼 ID
+        val textView: TextView = view.findViewById(R.id.tv_name)
+        val actionButton: TextView = view.findViewById(R.id.btn_action)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        // ★ item_added_stretching.xml 파일을 사용하도록 변경했습니다.
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_added_stretching, parent, false)
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = dataList[position]
-        holder.textView.text = item
+        val item = dataList[position] // 예: "고양이 자세 (60초) | 양손을 바닥에..."
+
+        // 🌟 화면에 보여줄 때는 " | " 앞부분만 잘라서 깔끔하게 렌더링!
+        val displayText = item.substringBefore(" | ").trim()
+        holder.textView.text = displayText
 
         // ★ type에 따라 버튼의 글자(+, -)와 색상을 바꿉니다.
+        // 주의: 클릭 이벤트(onItemClick)에는 잘라낸 글자가 아니라 원본(item)을 그대로 넘깁니다!
         when (type) {
             1 -> { // [선택된 목록] -> 삭제 기능
                 holder.actionButton.visibility = View.VISIBLE
-                holder.actionButton.text = "-"  // 빼기 표시
-                holder.actionButton.setTextColor(Color.RED) // 빨간색
+                holder.actionButton.text = "-"
+                holder.actionButton.setTextColor(Color.RED)
                 holder.actionButton.setOnClickListener { onItemClick(item) }
             }
             3 -> { // [자료실 목록] -> 추가 기능
                 holder.actionButton.visibility = View.VISIBLE
-                holder.actionButton.text = "+"  // 더하기 표시
-                holder.actionButton.setTextColor(Color.parseColor("#2196F3")) // 파란색
+                holder.actionButton.text = "+"
+                holder.actionButton.setTextColor(Color.parseColor("#2196F3"))
                 holder.actionButton.setOnClickListener { onItemClick(item) }
             }
-            else -> { // 단순 조회용
+            else -> { // 단순 조회용 (루틴 상세 화면 등)
                 holder.actionButton.visibility = View.GONE
                 holder.itemView.setOnClickListener { onItemClick(item) }
             }

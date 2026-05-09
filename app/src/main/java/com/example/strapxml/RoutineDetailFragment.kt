@@ -77,12 +77,8 @@ class RoutineDetailFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            // ✨ 핵심: 걸러내지 않습니다! "고양이 자세 (60초)"에서 이름만 깔끔하게 다듬어서 모두 가져갑니다.
-            val cleanTitles = exercises.map { it.substringBefore(" (").trim() }
-
-            // 영상 유무와 상관없이 모든 리스트를 통째로 다음 화면에 넘깁니다.
             val bundle = Bundle().apply {
-                putStringArrayList("ROUTINE_TITLES", ArrayList(cleanTitles))
+                putStringArrayList("ROUTINE_TITLES", ArrayList(exercises))
                 putInt("CURRENT_INDEX", 0)
                 putString("ROUTINE_NAME", routineName)
                 putLong("ROUTINE_START_TIME", System.currentTimeMillis())

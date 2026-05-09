@@ -303,16 +303,19 @@ class VideoResourcesDetail : Fragment() {
     }
 
     private fun loadRoutineExercise(index: Int) {
-        val title = routineTitles!![index]
-        val item = StretchingData.getStretchingItemByTitle(title)
+        val fullText = routineTitles!![index]
+        val titleOnly = fullText.substringBefore(" (").trim()
+        val aiDesc = fullText.substringAfter(" | ", "AI 트레이너 맞춤 추천 스트레칭입니다.\n\n아쉽게도 전용 영상은 없지만, 동작의 이름을 보고 타이머에 맞춰 천천히 몸을 풀어보세요!").trim()
+        val item = StretchingData.getStretchingItemByTitle(titleOnly)
 
         if (item != null) {
             bindData(item)
         } else {
+
             val aiCustomItem = StretchingItem(
                 id = -1,
-                name = title,
-                description = "AI 트레이너 맞춤 추천 스트레칭입니다.\n\n아쉽게도 전용 영상은 없지만, 동작의 이름을 보고 타이머에 맞춰 천천히 몸을 풀어보세요!",
+                name = titleOnly,
+                description = aiDesc,
                 category = "AI 맞춤",
                 videoId = "",
                 imageRes = 0,

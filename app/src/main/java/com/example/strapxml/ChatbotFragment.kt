@@ -33,18 +33,17 @@ class ChatbotFragment : Fragment() {
         val etMessage = view.findViewById<EditText>(R.id.et_message)
         val btnSend = view.findViewById<Button>(R.id.btn_send)
         rvChat = view.findViewById(R.id.rv_chat)
-
         chatAdapter = ChatAdapter(messageList) { stretches ->
 
-            // 여러 개의 동작(Pair)을 "이름 (시간초)" 형태의 글자 리스트로 변환
-            val stretchDetails = stretches.map { "${it.first} (${it.second}초)" }
 
-            // 루틴 이름 작성 (동작이 여러 개면 "거북목 외 2개" 식으로)
+            val stretchDetails = stretches.map { "${it.first} (${it.second}초) | ${it.third}" }
+
             val routineName = if (stretches.size > 1) {
                 "AI 세트: ${stretches[0].first} 외 ${stretches.size - 1}개"
             } else {
                 "AI 추천: ${stretches[0].first}"
             }
+
 
             RoutineFunctions.addRoutine(
                 context = requireContext(),
@@ -58,10 +57,10 @@ class ChatbotFragment : Fragment() {
         rvChat.layoutManager = LinearLayoutManager(requireContext())
         rvChat.adapter = chatAdapter
 
-        // 구글 Gemini AI 모델 세팅
+        // 구글 Gemini AI 모델 세팅 (이제 숨겨둔 API 키 사용!)
         val generativeModel = GenerativeModel(
             modelName = "gemini-2.5-flash-lite",
-            apiKey = BotConfig.GEMINI_API_KEY
+            apiKey = BuildConfig.GEMINI_API_KEY
         )
 
         btnSend.setOnClickListener {
@@ -77,7 +76,6 @@ class ChatbotFragment : Fragment() {
 
                 lifecycleScope.launch {
                     try {
-                        // 포인트 2: 프롬프트 업그레이드 (여러 개 추천 허용)
                         val availableStretches = StretchingData.getAllTitles().joinToString(", ")
                         val secretPrompt = """
                             $userText
@@ -89,32 +87,31 @@ class ChatbotFragment : Fragment() {
                             2. 하지만 억지로 위 자료실 목록에 끼워 맞출 필요는 절대 없어! 자료실에 없는 동작이라도 사용자의 증상 완화에 필요하다면 자유롭게 너만의 스트레칭 이름을 적어서 추천해줘. 오직 사용자의 증상 해결이 1순위야!
                             3. 추천하는 동작의 개수는 무조건 최소 1개에서 최대 5개 사이여야 해.
                                                     
-                            답변의 맨 마지막 줄에는 반드시 추천한 모든 스트레칭을 '||스트레칭 이름,시간(초)||' 형식으로 연달아 적어줘.
-                            예시: ||손목 탈탈 털기,30|| ||거북목 굽은등 교정,60|| ||의자에서 허리 비틀기,45||
+                            답변의 맨 마지막 줄에는 반드시 추천한 모든 스트레칭을 '||스트레칭 이름,시간(초),상세한 동작 방법||' 형식으로 연달아 적어줘.
+                            예시: ||손목 탈탈 털기,30,양팔을 앞으로 뻗고 손목을 가볍게 털어주세요.|| ||거북목 굽은등 교정,60,허리를 곧게 펴고 턱을 뒤로 당겨 유지합니다.||
                             만약 추천할 스트레칭이 없다면 이 기호를 절대 쓰지 마.)
                         """.trimIndent()
 
                         val response = generativeModel.generateContent(secretPrompt)
                         val aiRawText = response.text ?: "답변을 생성하지 못했습니다."
 
-                        // 여러 개의 기호 모두 찾아내기 (findAll 사용)
                         var displayAiText = aiRawText
-                        val parsedStretches = mutableListOf<Pair<String, Int>>()
+                        val parsedStretches = mutableListOf<Triple<String, Int, String>>()
 
-                        val regex = Regex("""\|\|(.*?),(.*?)\|\|""")
-                        val matchResults = regex.findAll(aiRawText) // find -> findAll 로 변경!
+                        val regex = Regex("""\|\|(.*?),(.*?),(.*?)\|\|""")
+                        val matchResults = regex.findAll(aiRawText)
 
                         for (match in matchResults) {
                             val name = match.groupValues[1].trim()
                             val duration = match.groupValues[2].trim().toIntOrNull() ?: 60
+                            val description = match.groupValues[3].trim()
 
-                            // 리스트에 하나씩 추가
-                            parsedStretches.add(Pair(name, duration))
+                            // Triple 리스트에 하나씩 추가
+                            parsedStretches.add(Triple(name, duration, description))
 
                             displayAiText = displayAiText.replace(match.value, "").trim()
                         }
 
-                        // 찾아낸 동작이 1개라도 있으면 리스트를 전달, 없으면 null 전달
                         val finalStretches = if (parsedStretches.isNotEmpty()) parsedStretches else null
 
                         messageList[loadingPosition] = ChatMessage(

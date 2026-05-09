@@ -57,10 +57,9 @@ class RoutineAddFragment : Fragment() {
         }
         // ==========================================
 
-        // ★ 1. 이전 화면에서 전달받은 ID 확인
+        //  이전 화면에서 전달받은 ID 확인
         routineId = arguments?.getLong("routineId", -1L) ?: -1L
 
-// ★ 2. ID가 -1L이 아니라면 "수정 모드"로 세팅
         if (routineId != -1L) {
             binding.tvTitle.text = "루틴 수정하기" // 타이틀 변경
             binding.btnDelete.visibility = View.VISIBLE
@@ -122,7 +121,7 @@ class RoutineAddFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            // ★ 3. 모드에 따라 알맞은 함수 호출
+            // 모드에 따라 알맞은 함수 호출
             if (routineId == -1L) {
                 // 새로 만들기 모드
                 RoutineFunctions.addRoutine(requireContext(), routineName, selectedList)
