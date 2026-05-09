@@ -17,9 +17,7 @@ Eigen::Matrix3f getCameraIntrinsics() {
 
 // 2. 3D 관절 회전 및 위치 계산
 Eigen::Vector3f calculateJointPosition(const Eigen::Vector3f& parent, const Eigen::Vector3f& link, float aX, float aY, float aZ) {
-    Eigen::Quaternionf q = Eigen::AngleAxisf(aX, Eigen::Vector3f::UnitX()) *
-                           Eigen::AngleAxisf(aY, Eigen::Vector3f::UnitY()) *
-                           Eigen::AngleAxisf(aZ, Eigen::Vector3f::UnitZ());
+    Eigen::Quaternionf q = Eigen::AngleAxisf(aX, Eigen::Vector3f::UnitX()) * Eigen::AngleAxisf(aY, Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(aZ, Eigen::Vector3f::UnitZ());
     return parent + q.matrix() * link;
 }
 
@@ -28,8 +26,8 @@ enum GeneIndex {
     SPINE_PITCH = 0,
     L_SH_FLEX, L_SH_ABD, L_EL_FLEX, // 좌측 팔
     R_SH_FLEX, R_SH_ABD, R_EL_FLEX, // 우측 팔
-    L_HIP_FLEX, L_HIP_ABD, L_KNEE_FLEX, // 좌측 다리 (고관절 앞/옆, 무릎)
-    R_HIP_FLEX, R_HIP_ABD, R_KNEE_FLEX, // 우측 다리 (고관절 앞/옆, 무릎)
+    L_HIP_FLEX, L_HIP_ABD, L_KNEE_FLEX, // 좌측 다리
+    R_HIP_FLEX, R_HIP_ABD, R_KNEE_FLEX, // 우측 다리
     NUM_GENES // 총 13개
 };
 
@@ -37,14 +35,14 @@ enum GeneIndex {
 float calculateLoss(const std::vector<Eigen::Vector2f>& target2D, const std::array<float, NUM_GENES>& genes) {
     // [가상의 인체 뼈대 비율]
     const float SPINE_LEN = 400.0f;
-    const float CLAVICLE_LEN = 150.0f; // 어깨 너비 절반
-    const float PELVIS_WIDTH = 120.0f; // 골반 너비 절반
+    const float CLAVICLE_LEN = 150.0f;
+    const float PELVIS_WIDTH = 120.0f;
     const float UPPER_ARM = 250.0f; const float LOWER_ARM = 200.0f;
     const float THIGH_LEN = 350.0f; const float CALF_LEN = 350.0f;
 
     Eigen::Vector3f pelvis(0, 0, 2500.0f); // 기준점 (Root)
 
-    // [상체 Kinematics] (Y축 음수 방향이 위쪽)
+    // [상체 Kinematics]
     Eigen::Vector3f neck = calculateJointPosition(pelvis, Eigen::Vector3f(0, -SPINE_LEN, 0), genes[SPINE_PITCH], 0, 0);
 
     Eigen::Vector3f l_sh_base = neck + Eigen::Vector3f(-CLAVICLE_LEN, 0, 0);
@@ -55,7 +53,7 @@ float calculateLoss(const std::vector<Eigen::Vector2f>& target2D, const std::arr
     Eigen::Vector3f r_elbow = calculateJointPosition(r_sh_base, Eigen::Vector3f(0, UPPER_ARM, 0), genes[R_SH_FLEX], genes[R_SH_ABD], 0);
     Eigen::Vector3f r_wrist = calculateJointPosition(r_elbow, Eigen::Vector3f(0, LOWER_ARM, 0), genes[R_EL_FLEX], 0, 0);
 
-    // [하체 Kinematics] (Y축 양수 방향이 아래쪽)
+    // [하체 Kinematics]
     Eigen::Vector3f l_hip_base = pelvis + Eigen::Vector3f(-PELVIS_WIDTH, 0, 0);
     Eigen::Vector3f l_knee = calculateJointPosition(l_hip_base, Eigen::Vector3f(0, THIGH_LEN, 0), genes[L_HIP_FLEX], genes[L_HIP_ABD], 0);
     Eigen::Vector3f l_ankle = calculateJointPosition(l_knee, Eigen::Vector3f(0, CALF_LEN, 0), genes[L_KNEE_FLEX], 0, 0);
@@ -79,10 +77,9 @@ float calculateLoss(const std::vector<Eigen::Vector2f>& target2D, const std::arr
     error += (project(l_knee) - target2D[8]).norm() + (project(r_knee) - target2D[9]).norm();
     error += (project(l_ankle) - target2D[10]).norm() + (project(r_ankle) - target2D[11]).norm();
 
-    // [해부학적 페널티] 팔꿈치와 무릎이 거꾸로 꺾이는 현상 방지
+    // [해부학적 페널티]
     if (genes[L_EL_FLEX] < 0 || genes[L_EL_FLEX] > static_cast<float>(M_PI)) error += 99999.0f;
     if (genes[R_EL_FLEX] < 0 || genes[R_EL_FLEX] > static_cast<float>(M_PI)) error += 99999.0f;
-    // 무릎은 팔꿈치와 반대로 굽혀짐을 가정 (0~PI 허용)
     if (genes[L_KNEE_FLEX] < 0 || genes[L_KNEE_FLEX] > static_cast<float>(M_PI)) error += 99999.0f;
     if (genes[R_KNEE_FLEX] < 0 || genes[R_KNEE_FLEX] > static_cast<float>(M_PI)) error += 99999.0f;
 
@@ -109,9 +106,8 @@ Java_com_example_strapxml_HumanoidOptimizer_runOptimization(
     }
     env->ReleaseFloatArrayElements(landmarks2D, data, 0);
 
-    // [전신 최적화를 위한 파라미터 상향 조정]
-    const int POPULATION_SIZE = 150; // 차원이 넓어져 샘플 증가
-    const int MAX_GENERATION = 50;   // 탐색 세대수 증가
+    const int POPULATION_SIZE = 150;
+    const int MAX_GENERATION = 50;
     const float SELECTION_RATIO = 0.2f;
     const float SHRINK_FACTOR = 0.85f;
 
