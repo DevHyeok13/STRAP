@@ -28,7 +28,7 @@ object RoutineFunctions {
     }
 
     // 저장하기
-    fun saveRoutines(context: Context, list: List<RoutineItem>) {
+    fun saveRoutines(context: Context, list:     List<RoutineItem>) {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         val json = Gson().toJson(list)
         prefs.edit().putString(KEY_ROUTINES, json).apply()
@@ -49,17 +49,16 @@ object RoutineFunctions {
     fun updateRoutine(context: Context, id: Long, newName: String, newStretchingList: List<String>) {
         val currentList = loadRoutines(context)
 
-        // 해당 ID를 가진 루틴이 리스트의 몇 번째에 있는지 찾습니다.
+
         val index = currentList.indexOfFirst { it.id == id }
 
         if (index != -1) {
-            // 찾았다면, 고유 ID는 그대로 유지하고 이름과 리스트만 교체합니다.
             currentList[index] = RoutineItem(
                 id = id,
                 name = newName,
                 stretchingList = newStretchingList
             )
-            // 변경된 전체 리스트를 다시 저장합니다.
+            // 변경된 전체 리스트를 다시 저장
             saveRoutines(context, currentList)
         }
     }

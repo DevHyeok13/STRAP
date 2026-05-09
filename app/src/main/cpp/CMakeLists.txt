@@ -9,6 +9,11 @@ add_library(
         SHARED
         optimizer-lib.cpp)
 
+target_include_directories(
+        optimizer-lib 
+        PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
+
 find_library(
         log-lib
         log)
