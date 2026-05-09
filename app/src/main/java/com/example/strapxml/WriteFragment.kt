@@ -6,8 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
-import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
@@ -39,16 +37,14 @@ class WriteFragment : Fragment() {
         val etTitle = view.findViewById<EditText>(R.id.et_title)
         val etContent = view.findViewById<EditText>(R.id.et_content)
         val btnSubmit = view.findViewById<Button>(R.id.btn_submit)
-        val rgBoard = view.findViewById<RadioGroup>(R.id.rg_board_type)
-        val rbFree = view.findViewById<RadioButton>(R.id.rb_free)
 
         btnSubmit.setOnClickListener {
-            val title = etTitle.text.toString()
-            val content = etContent.text.toString()
+            // .trim()을 붙여서 공백만 입력하는 꼼수 방지
+            val title = etTitle.text.toString().trim()
+            val content = etContent.text.toString().trim()
             val uid = auth.currentUser?.uid
 
-            // 게시판 종류 확인 (자유 or 평가)
-            val boardType = if (rbFree.isChecked) "free" else "review"
+            val boardType = "free"
 
             if (title.isEmpty() || content.isEmpty()) {
                 Toast.makeText(context, "제목과 내용을 모두 입력해주세요.", Toast.LENGTH_SHORT).show()

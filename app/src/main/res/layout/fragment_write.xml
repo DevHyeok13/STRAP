@@ -18,40 +18,11 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <RadioGroup
-        android:id="@+id/rg_board_type"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@+id/tv_write_header">
-
-        <RadioButton
-            android:id="@+id/rb_free"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="24dp"
-            android:checked="true"
-            android:buttonTint="@color/strap_teal"
-            android:text="자유게시판"
-            android:textColor="@color/text_title"
-            android:textSize="15sp" />
-
-        <RadioButton
-            android:id="@+id/rb_review"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:buttonTint="@color/strap_teal"
-            android:text="평가게시판"
-            android:textColor="@color/text_title"
-            android:textSize="15sp" />
-    </RadioGroup>
-
     <EditText
         android:id="@+id/et_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="24dp"
         android:background="@drawable/bg_signup_box"
         android:hint="제목을 입력하세요"
         android:inputType="text"
@@ -59,7 +30,7 @@
         android:textColor="@color/text_title"
         android:textColorHint="@color/text_hint"
         android:textSize="16sp"
-        app:layout_constraintTop_toBottomOf="@+id/rg_board_type" />
+        app:layout_constraintTop_toBottomOf="@+id/tv_write_header" />
 
     <EditText
         android:id="@+id/et_content"
