@@ -2,7 +2,7 @@ package com.example.strapxml
 
 import java.io.Serializable
 
-// 🚀 1. 3D 엔진용으로 업그레이드된 정답 자세 클래스
+// 3D 엔진용으로 업그레이드된 정답 자세 클래스
 data class Point2D(val x: Float, val y: Float) : Serializable
 
 data class TargetPose(
@@ -37,27 +37,15 @@ object StretchingData {
             targetPoses = listOf(
                 TargetPose(
                     targetAngles = OptimizedAngles(
-                        spinePitch = 95.1f,
-                        leftShoulderFlex = 66.0f, leftShoulderAbd = -151.1f, leftElbowFlex = 49.6f,
-                        rightShoulderFlex = -82.0f, rightShoulderAbd = 87.9f, rightElbowFlex = 23.0f,
-                        leftHipFlex = -26.9f, leftHipAbd = -165.6f, leftKneeFlex = 86.9f,
-                        rightHipFlex = -40.8f, rightHipAbd = 110.7f, rightKneeFlex = 87.5f
+                        spinePitch = 111.3f,
+                        leftShoulderFlex = -36.4f, leftShoulderAbd = -45.2f, leftElbowFlex = -5.3f,
+                        rightShoulderFlex = -50.6f, rightShoulderAbd = -46.3f, rightElbowFlex = -10.5f,
+                        leftHipFlex = -4.8f, leftHipAbd = 9.5f, leftKneeFlex = 65.3f,
+                        rightHipFlex = -27.2f, rightHipAbd = 48.2f, rightKneeFlex = 30.7f
                     ),
-                    landmarks2D = mapOf(11 to Point2D(0.2960f, 0.5187f), 12 to Point2D(0.3063f, 0.4985f), 13 to Point2D(0.2859f, 0.6998f), 14 to Point2D(0.2968f, 0.6741f), 15 to Point2D(0.2671f, 0.8555f), 16 to Point2D(0.2810f, 0.8054f), 23 to Point2D(0.4587f, 0.5690f), 24 to Point2D(0.4600f, 0.5572f), 25 to Point2D(0.4409f, 0.8249f), 26 to Point2D(0.4430f, 0.7851f), 27 to Point2D(0.5699f, 0.8061f), 28 to Point2D(0.5639f, 0.7709f)), // 화면 렌더링용 2D 랜드마크
-                    instruction = "1단계. 등과 허리를 평평하게 펴주세요.",
-                    failMessage = "허리가 아래로 처졌거나 위로 말렸습니다. 복부에 힘을 주어 등을 평평하게 만들어주세요."
-                ),
-                TargetPose(
-                    targetAngles = OptimizedAngles(
-                        spinePitch = 95.8f,
-                        leftShoulderFlex = -62.6f, leftShoulderAbd = 138.2f, leftElbowFlex = 38.6f,
-                        rightShoulderFlex = 82.9f, rightShoulderAbd = -92.4f, rightElbowFlex = 21.2f,
-                        leftHipFlex = -41.9f, leftHipAbd = -8.2f, leftKneeFlex = 85.8f,
-                        rightHipFlex = -45.1f, rightHipAbd = 61.2f, rightKneeFlex = 87.4f
-                    ),
-                    landmarks2D = mapOf(11 to Point2D(0.2988f, 0.5241f), 12 to Point2D(0.3081f, 0.5238f), 13 to Point2D(0.2946f, 0.6902f), 14 to Point2D(0.2984f, 0.6710f), 15 to Point2D(0.2706f, 0.8510f), 16 to Point2D(0.2828f, 0.8061f), 23 to Point2D(0.4604f, 0.5525f), 24 to Point2D(0.4558f, 0.5501f), 25 to Point2D(0.4402f, 0.8192f), 26 to Point2D(0.4363f, 0.7884f), 27 to Point2D(0.5741f, 0.8038f), 28 to Point2D(0.5630f, 0.7644f)), // 화면 렌더링용 2D 랜드마크
-                    instruction = "2단계. 숨을 내쉬며 등을 천장 쪽으로 둥글게 말아올리세요.",
-                    failMessage = "등이 충분히 말리지 않았습니다. 척추만 둥글게 끌어올려 주세요."
+                    landmarks2D = mapOf(11 to Point2D(0.5195f, 0.5062f), 12 to Point2D(0.5300f, 0.5121f), 13 to Point2D(0.5389f, 0.5668f), 14 to Point2D(0.5433f, 0.5736f), 15 to Point2D(0.5570f, 0.6162f), 16 to Point2D(0.5662f, 0.6309f), 23 to Point2D(0.3970f, 0.5226f), 24 to Point2D(0.4006f, 0.5252f), 25 to Point2D(0.4162f, 0.6124f), 26 to Point2D(0.4212f, 0.6160f), 27 to Point2D(0.2997f, 0.6147f), 28 to Point2D(0.2968f, 0.6165f)),
+                    instruction = "등을 둥글게 말아주세요.",
+                    failMessage = "허리가 아래로 처졌습니다."
                 )
             )
         ),
@@ -71,25 +59,25 @@ object StretchingData {
             targetPoses = listOf(
                 TargetPose(
                     targetAngles = OptimizedAngles(
-                        spinePitch = 92.4f,
-                        leftShoulderFlex = 82.9f, leftShoulderAbd = 92.7f, leftElbowFlex = 49.8f,
-                        rightShoulderFlex = -45.3f, rightShoulderAbd = -102.7f, rightElbowFlex = 73.1f,
-                        leftHipFlex = -61.2f, leftHipAbd = 151.9f, leftKneeFlex = 89.2f,
-                        rightHipFlex = 66.1f, rightHipAbd = -94.8f, rightKneeFlex = 76.1f
+                        spinePitch = 77.6f,
+                        leftShoulderFlex = -32.4f, leftShoulderAbd = 53.4f, leftElbowFlex = 1.5f,
+                        rightShoulderFlex = -3.9f, rightShoulderAbd = 51.0f, rightElbowFlex = -1.9f,
+                        leftHipFlex = -30.2f, leftHipAbd = -35.2f, leftKneeFlex = 14.2f,
+                        rightHipFlex = 85.8f, rightHipAbd = -33.2f, rightKneeFlex = 22.2f
                     ),
-                    landmarks2D = mapOf(11 to Point2D(0.6811f, 0.4695f), 12 to Point2D(0.7163f, 0.5045f), 13 to Point2D(0.6929f, 0.6327f), 14 to Point2D(0.7361f, 0.7503f), 15 to Point2D(0.7653f, 0.7020f), 16 to Point2D(0.8493f, 0.7895f), 23 to Point2D(0.5025f, 0.6445f), 24 to Point2D(0.5089f, 0.7052f), 25 to Point2D(0.3508f, 0.6688f), 26 to Point2D(0.3337f, 0.7325f), 27 to Point2D(0.2017f, 0.6540f), 28 to Point2D(0.1290f, 0.7143f)), // 화면 렌더링용 2D 랜드마크
-                    instruction = "1단계. 골반을 바닥에 붙이고 상체를 천천히 들어주세요.",
+                    landmarks2D = mapOf(11 to Point2D(0.3147f, 0.5560f), 12 to Point2D(0.3332f, 0.5367f), 13 to Point2D(0.2988f, 0.6331f), 14 to Point2D(0.3330f, 0.5911f), 15 to Point2D(0.2141f, 0.6464f), 16 to Point2D(0.2804f, 0.6130f), 23 to Point2D(0.4685f, 0.5985f), 24 to Point2D(0.4716f, 0.5809f), 25 to Point2D(0.5999f, 0.6016f), 26 to Point2D(0.5872f, 0.5830f), 27 to Point2D(0.7355f, 0.5925f), 28 to Point2D(0.6927f, 0.5737f)),
+                    instruction = "1단계. 골반과 팔꿈치를 바닥에 붙이고 상체를 천천히 들어주세요.",
                     failMessage = "골반이 바닥에서 떨어졌거나 상체가 덜 들렸습니다."
                 ),
                 TargetPose(
                     targetAngles = OptimizedAngles(
-                        spinePitch = 87.2f,
-                        leftShoulderFlex = 84.8f, leftShoulderAbd = 92.4f, leftElbowFlex = 41.8f,
-                        rightShoulderFlex = 60.4f, rightShoulderAbd = 97.9f, rightElbowFlex = 44.3f,
-                        leftHipFlex = 61.8f, leftHipAbd = -30.7f, leftKneeFlex = 90.4f,
-                        rightHipFlex = 68.2f, rightHipAbd = -95.2f, rightKneeFlex = 74.7f
+                        spinePitch = 23.8f,
+                        leftShoulderFlex = -31.1f, leftShoulderAbd = 49.2f, leftElbowFlex = 9.4f,
+                        rightShoulderFlex = 15.0f, rightShoulderAbd = 58.5f, rightElbowFlex = -0.2f,
+                        leftHipFlex = -18.9f, leftHipAbd = -35.5f, leftKneeFlex = 16.2f,
+                        rightHipFlex = 67.7f, rightHipAbd = -33.3f, rightKneeFlex = 27.2f
                     ),
-                    landmarks2D = mapOf(11 to Point2D(0.6479f, 0.3986f), 12 to Point2D(0.6835f, 0.4362f), 13 to Point2D(0.7050f, 0.5597f), 14 to Point2D(0.7736f, 0.6385f), 15 to Point2D(0.7719f, 0.6710f), 16 to Point2D(0.8707f, 0.7798f), 23 to Point2D(0.4998f, 0.6405f), 24 to Point2D(0.5062f, 0.7005f), 25 to Point2D(0.3448f, 0.6725f), 26 to Point2D(0.3254f, 0.7282f), 27 to Point2D(0.2081f, 0.6508f), 28 to Point2D(0.1254f, 0.7275f)), // 화면 렌더링용 2D 랜드마크
+                    landmarks2D = mapOf(11 to Point2D(0.2653f, 0.4949f), 12 to Point2D(0.2932f, 0.4880f), 13 to Point2D(0.1748f, 0.5681f), 14 to Point2D(0.2607f, 0.5423f), 15 to Point2D(0.0787f, 0.6200f), 16 to Point2D(0.1917f, 0.5699f), 23 to Point2D(0.4234f, 0.5977f), 24 to Point2D(0.4345f, 0.5871f), 25 to Point2D(0.5907f, 0.6202f), 26 to Point2D(0.5827f, 0.6137f), 27 to Point2D(0.7736f, 0.6377f), 28 to Point2D(0.7533f, 0.6325f)),
                     instruction = "2단계. 양 팔꿈치를 곧게 펴고 자세를 유지하세요.",
                     failMessage = "팔꿈치가 구부러져 있습니다. 양팔을 곧게 펴고 허리 자극에 집중하세요."
                 )
@@ -105,15 +93,15 @@ object StretchingData {
             targetPoses = listOf(
                 TargetPose(
                     targetAngles = OptimizedAngles(
-                        spinePitch = -33.6f,
-                        leftShoulderFlex = -103.1f, leftShoulderAbd = -84.7f, leftElbowFlex = 107.7f,
-                        rightShoulderFlex = 139.2f, rightShoulderAbd = 19.7f, rightElbowFlex = 82.5f,
-                        leftHipFlex = -39.8f, leftHipAbd = -35.8f, leftKneeFlex = 44.4f,
-                        rightHipFlex = -36.9f, rightHipAbd = 51.4f, rightKneeFlex = 36.5f
+                        spinePitch = -2.5f,
+                        leftShoulderFlex = 91.4f, leftShoulderAbd = -15.8f, leftElbowFlex = 91.8f,
+                        rightShoulderFlex = 94.8f, rightShoulderAbd = 26.8f, rightElbowFlex = 43.6f,
+                        leftHipFlex = -20.5f, leftHipAbd = -27.7f, leftKneeFlex = 19.9f,
+                        rightHipFlex = -7.6f, rightHipAbd = -2.8f, rightKneeFlex = 31.2f
                     ),
-                    landmarks2D = mapOf(11 to Point2D(0.5335f, 0.3311f), 12 to Point2D(0.5806f, 0.3083f), 13 to Point2D(0.6197f, 0.2641f), 14 to Point2D(0.7029f, 0.2140f), 15 to Point2D(0.5835f, 0.2538f), 16 to Point2D(0.6010f, 0.2470f), 23 to Point2D(0.5817f, 0.5319f), 24 to Point2D(0.6089f, 0.5344f), 25 to Point2D(0.5111f, 0.6840f), 26 to Point2D(0.5035f, 0.6884f), 27 to Point2D(0.4231f, 0.8187f), 28 to Point2D(0.4076f, 0.8407f)), // 화면 렌더링용 2D 랜드마크
+                    landmarks2D = mapOf(11 to Point2D(0.4165f, 0.4255f), 12 to Point2D(0.4267f, 0.4376f), 13 to Point2D(0.3694f, 0.3850f), 14 to Point2D(0.3927f, 0.4119f), 15 to Point2D(0.4040f, 0.4007f), 16 to Point2D(0.4032f, 0.4083f), 23 to Point2D(0.4073f, 0.5364f), 24 to Point2D(0.4135f, 0.5377f), 25 to Point2D(0.4463f, 0.6198f), 26 to Point2D(0.4378f, 0.6173f), 27 to Point2D(0.4797f, 0.7032f), 28 to Point2D(0.4743f, 0.6963f)),
                     instruction = "배를 내밀고, 엄지로 턱을 밀어 올려 상체를 젖혀주세요.",
-                    failMessage = "상체가 너무 꼿꼿합니다. 배를 밀착하고 뒤로 젖혀주세요."
+                    failMessage = "상체를 너무 젖혔거나 펴졌습니다."
                 )
             )
         ),
@@ -127,14 +115,15 @@ object StretchingData {
             targetPoses = listOf(
                 TargetPose(
                     targetAngles = OptimizedAngles(
-                        spinePitch = 114.3f,
-                        leftShoulderFlex = -88.7f, leftShoulderAbd = -87.3f, leftElbowFlex = 180.0f,
-                        rightShoulderFlex = -89.1f, rightShoulderAbd = 87.3f, rightElbowFlex = 180.0f,
-                        leftHipFlex = -16.5f, leftHipAbd = -46.2f, leftKneeFlex = 0.0f,
-                        rightHipFlex = -17.0f, rightHipAbd = 47.8f, rightKneeFlex = 0.0f
-                    ), landmarks2D = mapOf(11 to Point2D(0.6494f, 0.5422f), 12 to Point2D(0.6278f, 0.5403f), 13 to Point2D(0.6356f, 0.7194f), 14 to Point2D(0.6029f, 0.7076f), 15 to Point2D(0.4940f, 0.8372f), 16 to Point2D(0.5172f, 0.8121f), 23 to Point2D(0.6624f, 0.8370f), 24 to Point2D(0.6077f, 0.8175f), 25 to Point2D(0.4022f, 0.9906f), 26 to Point2D(0.4220f, 0.9741f), 27 to Point2D(0.3889f, 1.2188f), 28 to Point2D(0.3704f, 1.1824f)), // 화면 렌더링용 2D 랜드마크
+                        spinePitch = 14.5f,
+                        leftShoulderFlex = 87.9f, leftShoulderAbd = -48.5f, leftElbowFlex = 46.9f,
+                        rightShoulderFlex = 71.3f, rightShoulderAbd = 85.0f, rightElbowFlex = 55.7f,
+                        leftHipFlex = -9.9f, leftHipAbd = -24.4f, leftKneeFlex = 51.9f,
+                        rightHipFlex = -11.0f, rightHipAbd = 29.0f, rightKneeFlex = 58.7f
+                    ),
+                    landmarks2D = mapOf(11 to Point2D(0.5857f, 0.6637f), 12 to Point2D(0.4800f, 0.6592f), 13 to Point2D(0.6601f, 0.6747f), 14 to Point2D(0.4035f, 0.6637f), 15 to Point2D(0.6533f, 0.6145f), 16 to Point2D(0.4202f, 0.6020f), 23 to Point2D(0.5607f, 0.7990f), 24 to Point2D(0.4893f, 0.7960f), 25 to Point2D(0.5543f, 0.8841f), 26 to Point2D(0.4796f, 0.8801f), 27 to Point2D(0.5504f, 0.9612f), 28 to Point2D(0.4818f, 0.9644f)),
                     instruction = "팔꿈치와 손등을 벽에 붙인 상태로 팔을 위아래로 움직이세요.",
-                    failMessage = "양팔이 가상의 벽에서 떨어졌습니다. 손등과 팔꿈치를 뒤로 바짝 붙여주세요."
+                    failMessage = "팔이 너무 과하게 굽혀졌거나 펴졌습니다."
                 )
             )
         ),
@@ -148,15 +137,15 @@ object StretchingData {
             targetPoses = listOf(
                 TargetPose(
                     targetAngles = OptimizedAngles(
-                        spinePitch = 91.7f,
-                        leftShoulderFlex = -74.5f, leftShoulderAbd = -128.5f, leftElbowFlex = 87.8f,
-                        rightShoulderFlex = -79.7f, rightShoulderAbd = 87.9f, rightElbowFlex = 48.8f,
-                        leftHipFlex = 19.0f, leftHipAbd = 110.4f, leftKneeFlex = 47.8f,
-                        rightHipFlex = -31.1f, rightHipAbd = 78.0f, rightKneeFlex = 52.5f
+                        spinePitch = -1.2f,
+                        leftShoulderFlex = -5.8f, leftShoulderAbd = -45.4f, leftElbowFlex = 11.1f,
+                        rightShoulderFlex = -17.7f, rightShoulderAbd = 62.6f, rightElbowFlex = -5.4f,
+                        leftHipFlex = 0.4f, leftHipAbd = -19.7f, leftKneeFlex = 46.7f,
+                        rightHipFlex = -6.7f, rightHipAbd = 21.9f, rightKneeFlex = 57.4f
                     ),
-                    landmarks2D = mapOf(11 to Point2D(0.5054f, 0.4775f), 12 to Point2D(0.2085f, 0.4710f), 13 to Point2D(0.5557f, 0.5973f), 14 to Point2D(0.1461f, 0.6028f), 15 to Point2D(0.7195f, 0.5989f), 16 to Point2D(0.1406f, 0.7286f), 23 to Point2D(0.4575f, 0.7334f), 24 to Point2D(0.2843f, 0.7373f), 25 to Point2D(0.4273f, 0.9314f), 26 to Point2D(0.3349f, 0.9184f), 27 to Point2D(0.4763f, 1.0782f), 28 to Point2D(0.3977f, 1.0197f)), // 화면 렌더링용 2D 랜드마크
+                    landmarks2D = mapOf(11 to Point2D(0.6207f, 0.5612f), 12 to Point2D(0.5138f, 0.5609f), 13 to Point2D(0.6473f, 0.6250f), 14 to Point2D(0.4922f, 0.6133f), 15 to Point2D(0.6510f, 0.6891f), 16 to Point2D(0.4362f, 0.6153f), 23 to Point2D(0.5896f, 0.6939f), 24 to Point2D(0.5287f, 0.6920f), 25 to Point2D(0.5835f, 0.7858f), 26 to Point2D(0.5411f, 0.7901f), 27 to Point2D(0.5734f, 0.8503f), 28 to Point2D(0.5326f, 0.8542f)),
                     instruction = "팔을 벽에 고정하고 무게중심을 앞으로 이동하세요.",
-                    failMessage = "팔꿈치가 펴졌거나 굽혀졌습니다. 90도를 유지하세요."
+                    failMessage = "팔꿈치가 과하게 펴졌거나 굽혀졌습니다. 90도를 유지하세요."
                 )
             )
         )
