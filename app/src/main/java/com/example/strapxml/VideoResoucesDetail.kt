@@ -113,6 +113,7 @@ class VideoResourcesDetail : Fragment() {
 
         if (routineTitles != null && routineTitles!!.isNotEmpty()) {
             isRoutineMode = true
+            // 💡 여기서 arguments에서 값을 꺼내옵니다. (갔다 돌아오면 업데이트된 최신 값을 꺼내게 됩니다!)
             currentIndex = arguments?.getInt("CURRENT_INDEX", 0) ?: 0
             routineName = arguments?.getString("ROUTINE_NAME") ?: ""
 
@@ -140,6 +141,10 @@ class VideoResourcesDetail : Fragment() {
             if (isRoutineMode && routineTitles != null) {
                 if (currentIndex < routineTitles!!.size - 1) {
                     currentIndex++
+
+                    // 🚀 [핵심 해결 로직 1] 다음 운동으로 넘어갈 때, arguments(택배상자) 안의 번호도 최신화시킵니다!
+                    arguments?.putInt("CURRENT_INDEX", currentIndex)
+
                     loadRoutineExercise(currentIndex)
                     updateButtonStates()
                 } else {
@@ -157,6 +162,10 @@ class VideoResourcesDetail : Fragment() {
             if (isRoutineMode && routineTitles != null) {
                 if (currentIndex > 0) {
                     currentIndex--
+
+                    // 🚀 [핵심 해결 로직 2] 이전 운동으로 돌아갈 때도, arguments(택배상자) 안의 번호를 최신화시킵니다!
+                    arguments?.putInt("CURRENT_INDEX", currentIndex)
+
                     loadRoutineExercise(currentIndex)
                     updateButtonStates()
                 } else {
@@ -165,7 +174,7 @@ class VideoResourcesDetail : Fragment() {
             }
         }
 
-        // 🚀 수정된 부분: 자세 분석 버튼 클릭 이벤트
+        // 자세 분석 버튼 클릭 이벤트
         binding.btnPoseAnalysis.setOnClickListener {
             currentStretchingItem?.let { item ->
 
@@ -181,6 +190,7 @@ class VideoResourcesDetail : Fragment() {
                 findNavController().navigate(R.id.action_detail_to_pose, bundle)
             }
         }
+
         // 평가하기 버튼 클릭 리스너 추가
         binding.btnWriteReview.setOnClickListener {
             // 현재 화면에 표시된 스트레칭의 이름을 가져와서 팝업을 띄웁니다.
