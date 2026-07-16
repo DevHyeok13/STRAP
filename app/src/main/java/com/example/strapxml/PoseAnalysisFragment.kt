@@ -10,6 +10,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.util.Size
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +24,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.strapxml.databinding.FragmentPoseAnalysisBinding
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
+import com.google.mediapipe.tasks.core.Delegate // 🚀 GPU 가속을 위한 import!
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
@@ -41,44 +43,39 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
     private val optimizer = HumanoidOptimizer()
 
-    private enum class AnalysisState { PREPARING, ANALYZING, RESTING, FINISHED }
+    private enum class AnalysisState { PREPARING, ANALYZING, FINISHED }
     private var currentState = AnalysisState.PREPARING
 
     private val TIME_PREPARE = 10
     private val TIME_ANALYZE = 20
-    private val TIME_REST = 8
 
     private var timeLeft = TIME_PREPARE
-    private var currentPoseIndex = 0
 
     private val timerHandler = Handler(Looper.getMainLooper())
     private lateinit var timerRunnable: Runnable
-
-    private var totalFramesAnalyzed = 0
-    private var totalAccumulatedScore = 0.0
 
     private var tts: TextToSpeech? = null
     private var lastSpokenTime = 0L
     private val SPEAK_COOLDOWN_MS = 3000L
 
-    // 🚀 EMA 필터 (준비 단계 뼈대 떨림 방지)
     private var smoothedPelvisX = -1f
     private var smoothedPelvisY = -1f
     private var smoothedSpineLength = -1f
     private val ALPHA = 0.2f
 
-    // 🚀 성능 최적화: FPS 제어 및 측정 변수
     private var lastAnalyzedTimestamp = 0L
     private val THROTTLE_TIMEOUT_MS = 66L // 약 15FPS 제한
+
+    // 🚀 FPS 측정을 위한 변수
     private var frameCounter = 0
     private var lastFpsTimestamp = 0L
 
-    // 🚀 사내 저작 도구용 데이터 수집 변수 (절사평균 아웃라이어 제거 알고리즘)
-    private var isCapturingFrames = false
-    private var capturedFrameCount = 0
-    private val MAX_CAPTURE_FRAMES = 10
-    private var collectedAngles = Array(13) { FloatArray(MAX_CAPTURE_FRAMES) }
-    private var lastCapturedLandmarks = mutableMapOf<String, String>()
+    // 🚀 동적 평가를 위한 사용자의 궤적 저장 리스트
+    private val currentUserTrajectory = mutableListOf<OptimizedAngles>()
+    private var badPostureFrameCount = 0
+
+    // 사내 저작 도구용 플래그
+    private var isRecordingMotion = false
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -96,16 +93,27 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
         super.onViewCreated(view, savedInstanceState)
         currentVideoId = arguments?.getString("VIDEO_ID") ?: ""
 
-        binding.btnBack.setOnClickListener { findNavController().popBackStack() }
+        binding.btnBack.setOnClickListener {
+            // 🚀 사용자가 뒤로가기를 누르면 즉시 분석 종료
+            stopAnalysisSafely()
+            findNavController().popBackStack()
+        }
 
-        // 📷 데이터 추출 버튼 이벤트 (10프레임 수집 시작)
+        // 🎥 사내 저작 도구 토글 로직
         binding.btnCaptureData.setOnClickListener {
-            Toast.makeText(requireContext(), "📷 3초 뒤 10프레임 동안 자세를 수집합니다! 얼음!", Toast.LENGTH_SHORT).show()
-            speakOut("3초 뒤 촬영합니다. 3, 2, 1.")
-            Handler(Looper.getMainLooper()).postDelayed({
-                isCapturingFrames = true
-                capturedFrameCount = 0
-            }, 3000)
+            if (!isRecordingMotion) {
+                isRecordingMotion = true
+                currentUserTrajectory.clear()
+                binding.btnCaptureData.text = "🔴 녹화 종료 및 추출"
+                binding.btnCaptureData.setBackgroundColor(android.graphics.Color.parseColor("#D32F2F"))
+                Toast.makeText(requireContext(), "🎥 추출용 녹화 시작!", Toast.LENGTH_SHORT).show()
+            } else {
+                isRecordingMotion = false
+                binding.btnCaptureData.text = "📷 모션 데이터 추출"
+                binding.btnCaptureData.setBackgroundColor(android.graphics.Color.parseColor("#6200EE"))
+                Toast.makeText(requireContext(), "✅ 추출 완료! Logcat 확인", Toast.LENGTH_SHORT).show()
+                generateTrajectoryCode()
+            }
         }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -118,13 +126,16 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
 
-        // ✅ 바로 타이머를 시작하지 않고, 온보딩 팝업 검사를 먼저 실행합니다!
         checkAndShowFirstTimeGuide()
     }
 
     private fun setupPoseLandmarker() {
         try {
-            val baseOptions = BaseOptions.builder().setModelAssetPath("pose_landmarker_heavy.task").build()
+            val baseOptions = BaseOptions.builder()
+                .setModelAssetPath("pose_landmarker_full.task")
+                .setDelegate(Delegate.GPU)
+                .build()
+
             val options = PoseLandmarker.PoseLandmarkerOptions.builder()
                 .setBaseOptions(baseOptions)
                 .setRunningMode(RunningMode.LIVE_STREAM)
@@ -135,9 +146,8 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
     }
 
     private fun startAnalysisFlow() {
-        val videoInfo = StretchingData.myCustomData[currentVideoId]
-        val targetPoses = videoInfo?.targetPoses ?: emptyList()
-        if (targetPoses.isEmpty()) return
+        val videoInfo = StretchingData.myCustomData[currentVideoId] ?: return
+        val dynamicTarget = videoInfo.dynamicTarget
 
         timerRunnable = object : Runnable {
             override fun run() {
@@ -149,39 +159,23 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
                         if (timeLeft <= 0) {
                             currentState = AnalysisState.ANALYZING
                             timeLeft = TIME_ANALYZE
-                            speakOut(targetPoses[currentPoseIndex].instruction)
+                            currentUserTrajectory.clear() // 사용자 궤적 기록 시작!
+                            speakOut(dynamicTarget.instruction)
                         }
                     }
                     AnalysisState.ANALYZING -> {
                         if (timeLeft <= 0) {
-                            if (currentPoseIndex < targetPoses.size - 1) {
-                                currentState = AnalysisState.RESTING
-                                timeLeft = TIME_REST
-                                binding.targetOverlayView.setTargetPose(null)
-                                resetSmoothing()
-                            } else {
-                                currentState = AnalysisState.FINISHED
-                                finishAnalysis()
-                                return
-                            }
-                        }
-                    }
-                    AnalysisState.RESTING -> {
-                        if (timeLeft <= 0) {
-                            currentState = AnalysisState.ANALYZING
-                            currentPoseIndex++
-                            timeLeft = TIME_ANALYZE
-                            speakOut(targetPoses[currentPoseIndex].instruction)
+                            currentState = AnalysisState.FINISHED
+                            finishAnalysisWithDTW() // 20초 끝! DTW 점수 결산하러 이동
+                            return
                         }
                     }
                     AnalysisState.FINISHED -> return
                 }
 
-                // 🚀 UI 타이머 업데이트
                 val statusText = when (currentState) {
                     AnalysisState.PREPARING -> "준비 시간"
-                    AnalysisState.ANALYZING -> "운동 분석 중"
-                    AnalysisState.RESTING -> "휴식 시간"
+                    AnalysisState.ANALYZING -> "운동 기록 중"
                     else -> "완료"
                 }
                 binding.tvTimer.text = "$statusText : ${timeLeft}초"
@@ -197,9 +191,15 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
             val preview = Preview.Builder().build().also { it.setSurfaceProvider(binding.viewFinder.surfaceProvider) }
-            val analyzer = ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build().also {
-                it.setAnalyzer(cameraExecutor) { image -> processImage(image) }
-            }
+
+            // 카메라 해상도를 480x640으로 제한
+            val analyzer = ImageAnalysis.Builder()
+                .setTargetResolution(Size(480, 640))
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build().also {
+                    it.setAnalyzer(cameraExecutor) { image -> processImage(image) }
+                }
+
             cameraProvider.unbindAll()
             cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_FRONT_CAMERA, preview, analyzer)
         }, ContextCompat.getMainExecutor(requireContext()))
@@ -207,8 +207,6 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
     private fun processImage(image: ImageProxy) {
         val currentTime = SystemClock.uptimeMillis()
-
-        // 🚀 프레임 스로틀링 (약 15FPS 제한)
         if (currentTime - lastAnalyzedTimestamp < THROTTLE_TIMEOUT_MS) {
             image.close()
             return
@@ -240,9 +238,7 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             return
         }
 
-        val targetPoses = StretchingData.myCustomData[currentVideoId]?.targetPoses ?: return
-        val safeIndex = currentPoseIndex.coerceAtMost(targetPoses.size - 1)
-        val currentTarget = targetPoses[safeIndex]
+        val dynamicTarget = StretchingData.myCustomData[currentVideoId]?.dynamicTarget ?: return
 
         val lSh = rawLandmarks[11]; val rSh = rawLandmarks[12]
         val lHip = rawLandmarks[23]; val rHip = rawLandmarks[24]
@@ -259,10 +255,7 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             val rawNY = ((lSh.y() + rSh.y()) / 2f) * viewH
             val rawSLen = Math.hypot((rawPX - rawNX).toDouble(), (rawPY - rawNY).toDouble()).toFloat()
 
-            // ====================================================================
-            // [1단계] 준비/휴식: 뼈대가 몸을 따라다님 (가이드)
-            // ====================================================================
-            if (currentState == AnalysisState.PREPARING || currentState == AnalysisState.RESTING) {
+            if (currentState == AnalysisState.PREPARING) {
                 if (smoothedPelvisX < 0f) {
                     smoothedPelvisX = rawPX; smoothedPelvisY = rawPY; smoothedSpineLength = rawSLen
                 } else {
@@ -273,20 +266,12 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
                 activity?.runOnUiThread {
                     if (_binding == null) return@runOnUiThread
-                    binding.tvFeedback.text = "하얀색 가이드 뼈대에 몸을 맞춰 준비하세요!"
-                    val prepColor = android.graphics.Color.parseColor("#99FFFFFF")
-                    val prepColorMap = mapOf(
-                        "11_12" to prepColor, "11_23" to prepColor, "12_24" to prepColor, "23_24" to prepColor,
-                        "11_13" to prepColor, "13_15" to prepColor, "12_14" to prepColor, "14_16" to prepColor,
-                        "23_25" to prepColor, "25_27" to prepColor, "24_26" to prepColor, "26_28" to prepColor
-                    )
-                    binding.targetOverlayView.setTargetPose(currentTarget.landmarks2D, smoothedPelvisX, smoothedPelvisY, smoothedSpineLength, prepColorMap)
+                    binding.tvFeedback.text = "가이드에 맞춰 준비하세요."
+                    val prepColorMap = mapOf<String, Int>()
+                    binding.targetOverlayView.setTargetPose(dynamicTarget.baseLandmarks2D, smoothedPelvisX, smoothedPelvisY, smoothedSpineLength, prepColorMap)
                 }
 
-                // ====================================================================
-                // [2단계] 분석: 뼈대 얼음! & True 3D 채점
-                // ====================================================================
-            } else if (currentState == AnalysisState.ANALYZING) {
+            } else if (currentState == AnalysisState.ANALYZING || isRecordingMotion) {
                 if (smoothedPelvisX < 0f) {
                     smoothedPelvisX = rawPX; smoothedPelvisY = rawPY; smoothedSpineLength = rawSLen
                 }
@@ -317,10 +302,6 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
                 }
 
                 val userAngles = optimizer.calculateOptimalAngles(target3DArray)
-                val scoreResult = PoseScorer.analyze(userAngles, currentTarget)
-
-                totalFramesAnalyzed++
-                totalAccumulatedScore += scoreResult.score
 
                 // 🚀 실시간 FPS 로깅
                 frameCounter++
@@ -331,104 +312,13 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
                     lastFpsTimestamp = currentFpsTime
                 }
 
-                // 📷 사내 저작 도구 데이터 추출 (절사평균 아웃라이어 제거 알고리즘)
-                if (isCapturingFrames) {
-                    val u = userAngles
-                    val c = capturedFrameCount
-
-                    collectedAngles[0][c] = u.spinePitch
-                    collectedAngles[1][c] = u.leftShoulderFlex
-                    collectedAngles[2][c] = u.leftShoulderAbd
-                    collectedAngles[3][c] = u.leftElbowFlex
-                    collectedAngles[4][c] = u.rightShoulderFlex
-                    collectedAngles[5][c] = u.rightShoulderAbd
-                    collectedAngles[6][c] = u.rightElbowFlex
-                    collectedAngles[7][c] = u.leftHipFlex
-                    collectedAngles[8][c] = u.leftHipAbd
-                    collectedAngles[9][c] = u.leftKneeFlex
-                    collectedAngles[10][c] = u.rightHipFlex
-                    collectedAngles[11][c] = u.rightHipAbd
-                    collectedAngles[12][c] = u.rightKneeFlex
-
-                    lastCapturedLandmarks.clear()
-                    for (i in indices) {
-                        val lm = rawLandmarks[i]
-                        lastCapturedLandmarks["$i"] = String.format("Point2D(%.4ff, %.4ff)", lm.x(), lm.y())
-                    }
-
-                    capturedFrameCount++
-
-                    if (capturedFrameCount >= MAX_CAPTURE_FRAMES) {
-                        isCapturingFrames = false
-                        val finalAverages = FloatArray(13)
-
-                        // 💡 양극단(Max, Min) 아웃라이어 제거 로직
-                        for (i in 0 until 13) {
-                            val sortedValues = collectedAngles[i].sorted()
-                            var sum = 0f
-                            for (j in 1 until MAX_CAPTURE_FRAMES - 1) {
-                                sum += sortedValues[j]
-                            }
-                            finalAverages[i] = sum / (MAX_CAPTURE_FRAMES - 2).toFloat()
-                        }
-
-                        val lmsStrList = lastCapturedLandmarks.map { "${it.key} to ${it.value}" }
-
-                        val generatedCode = """
-                TargetPose(
-                    targetAngles = OptimizedAngles(
-                        spinePitch = ${String.format("%.1f", finalAverages[0])}f,
-                        leftShoulderFlex = ${String.format("%.1f", finalAverages[1])}f, leftShoulderAbd = ${String.format("%.1f", finalAverages[2])}f, leftElbowFlex = ${String.format("%.1f", finalAverages[3])}f,
-                        rightShoulderFlex = ${String.format("%.1f", finalAverages[4])}f, rightShoulderAbd = ${String.format("%.1f", finalAverages[5])}f, rightElbowFlex = ${String.format("%.1f", finalAverages[6])}f,
-                        leftHipFlex = ${String.format("%.1f", finalAverages[7])}f, leftHipAbd = ${String.format("%.1f", finalAverages[8])}f, leftKneeFlex = ${String.format("%.1f", finalAverages[9])}f,
-                        rightHipFlex = ${String.format("%.1f", finalAverages[10])}f, rightHipAbd = ${String.format("%.1f", finalAverages[11])}f, rightKneeFlex = ${String.format("%.1f", finalAverages[12])}f
-                    ),
-                    landmarks2D = mapOf(${lmsStrList.joinToString(", ")}),
-                    tolerance = 25.0f,
-                    instruction = "TODO: 안내 메시지 입력",
-                    failMessage = "TODO: 실패 피드백 입력"
-                )""".trimIndent()
-
-                        Log.w("STRAP_AUTHORING", "\n\n🎉 [무결점 절사평균 데이터 추출 완료! 복사하세요]\n\n$generatedCode,\n\n")
-                        activity?.runOnUiThread { Toast.makeText(context, "✅ 무결점 데이터 캡처 완료!", Toast.LENGTH_SHORT).show() }
-                    }
-                }
-
-                // 🚀 신호등 렌더링 & 3D 내적 연산
-                fun getColor(diff: Float) = when {
-                    diff < 15f -> android.graphics.Color.parseColor("#9900FF64")
-                    diff < 25f -> android.graphics.Color.parseColor("#99FFEB3B")
-                    else -> android.graphics.Color.parseColor("#99F44336")
-                }
-                fun getDiff(a: Float, b: Float) = Math.abs(a - b)
-                fun getTrue3DAngle(flex1: Float, abd1: Float, flex2: Float, abd2: Float): Float {
-                    val f1 = Math.toRadians(flex1.toDouble()); val a1 = Math.toRadians(abd1.toDouble())
-                    val f2 = Math.toRadians(flex2.toDouble()); val a2 = Math.toRadians(abd2.toDouble())
-                    val dot = (Math.sin(a1)*Math.cos(f1) * Math.sin(a2)*Math.cos(f2)) +
-                            (Math.cos(a1)*Math.cos(f1) * Math.cos(a2)*Math.cos(f2)) +
-                            (Math.sin(f1) * Math.sin(f2))
-                    return Math.toDegrees(Math.acos(Math.max(-1.0, Math.min(1.0, dot)))).toFloat()
-                }
-
-                val t = currentTarget.targetAngles; val u = userAngles
-                val colorMap = mapOf(
-                    "11_12" to getColor(getDiff(t.spinePitch, u.spinePitch)), "11_23" to getColor(getDiff(t.spinePitch, u.spinePitch)),
-                    "12_24" to getColor(getDiff(t.spinePitch, u.spinePitch)), "23_24" to getColor(getDiff(t.spinePitch, u.spinePitch)),
-                    "11_13" to getColor(getTrue3DAngle(t.leftShoulderFlex, t.leftShoulderAbd, u.leftShoulderFlex, u.leftShoulderAbd)),
-                    "13_15" to getColor(getDiff(t.leftElbowFlex, u.leftElbowFlex)),
-                    "12_14" to getColor(getTrue3DAngle(t.rightShoulderFlex, t.rightShoulderAbd, u.rightShoulderFlex, u.rightShoulderAbd)),
-                    "14_16" to getColor(getDiff(t.rightElbowFlex, u.rightElbowFlex)),
-                    "23_25" to getColor(getTrue3DAngle(t.leftHipFlex, t.leftHipAbd, u.leftHipFlex, u.leftHipAbd)),
-                    "25_27" to getColor(getDiff(t.leftKneeFlex, u.leftKneeFlex)),
-                    "24_26" to getColor(getTrue3DAngle(t.rightHipFlex, t.rightHipAbd, u.rightHipFlex, u.rightHipAbd)),
-                    "26_28" to getColor(getDiff(t.rightKneeFlex, u.rightKneeFlex))
-                )
+                currentUserTrajectory.add(userAngles)
 
                 activity?.runOnUiThread {
                     if (_binding == null) return@runOnUiThread
-                    binding.tvFeedback.text = "점수: ${scoreResult.score}\n${scoreResult.feedback}"
-                    binding.targetOverlayView.setTargetPose(currentTarget.landmarks2D, smoothedPelvisX, smoothedPelvisY, smoothedSpineLength, colorMap)
-                    if (scoreResult.score < 70) speakOut(scoreResult.feedback, true)
+                    binding.tvFeedback.text = "움직임을 기록하고 있습니다..."
+                    val prepColorMap = mapOf<String, Int>()
+                    binding.targetOverlayView.setTargetPose(dynamicTarget.baseLandmarks2D, smoothedPelvisX, smoothedPelvisY, smoothedSpineLength, prepColorMap)
                 }
             }
         } else {
@@ -441,14 +331,77 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun resetSmoothing() {
-        smoothedPelvisX = -1f; smoothedPelvisY = -1f; smoothedSpineLength = -1f
+    private fun generateTrajectoryCode() {
+        if (currentUserTrajectory.isEmpty()) return
+
+        val sb = StringBuilder()
+        sb.append("val targetTrajectory = listOf(\n")
+
+        for ((index, u) in currentUserTrajectory.withIndex()) {
+            val isLast = index == currentUserTrajectory.size - 1
+            val comma = if (isLast) "" else ","
+
+            val line = String.format(
+                Locale.US,
+                "    OptimizedAngles(%.1ff, %.1ff, %.1ff, %.1ff, %.1ff, %.1ff, %.1ff, %.1ff, %.1ff, %.1ff, %.1ff, %.1ff, %.1ff)%s\n",
+                u.spinePitch, u.leftShoulderFlex, u.leftShoulderAbd, u.leftElbowFlex,
+                u.rightShoulderFlex, u.rightShoulderAbd, u.rightElbowFlex,
+                u.leftHipFlex, u.leftHipAbd, u.leftKneeFlex,
+                u.rightHipFlex, u.rightHipAbd, u.rightKneeFlex, comma
+            )
+            sb.append(line)
+        }
+        sb.append(")")
+        Log.w("STRAP_AUTHORING", "\n\n🎉 [동적 시계열 데이터 추출 완료!]\n\n${sb.toString()}\n\n")
     }
 
-    private fun finishAnalysis() {
-        val finalScore = if (totalFramesAnalyzed > 0) (totalAccumulatedScore / totalFramesAnalyzed).toInt() else 0
-        Toast.makeText(context, "최종 점수: $finalScore", Toast.LENGTH_LONG).show()
-        findNavController().popBackStack()
+    private fun finishAnalysisWithDTW() {
+        // 백그라운드로 나가서 뷰가 죽었다면 실행 취소
+        if (!isAdded || _binding == null) return
+
+        val dynamicTarget = StretchingData.myCustomData[currentVideoId]?.dynamicTarget
+
+        if (dynamicTarget == null || dynamicTarget.targetTrajectory.isEmpty() || currentUserTrajectory.isEmpty()) {
+            activity?.runOnUiThread {
+                Toast.makeText(context, "분석할 데이터가 부족합니다.", Toast.LENGTH_LONG).show()
+                trySafePopBackStack()
+            }
+            return
+        }
+
+        // DTW 엔진 호출
+        val finalResult = PoseScorer.analyzeTrajectory(currentUserTrajectory, dynamicTarget.targetTrajectory)
+
+        Log.d("STRAP_DTW", "사용자 궤적 크기: ${currentUserTrajectory.size}, 정답 궤적 크기: ${dynamicTarget.targetTrajectory.size}")
+        Log.d("STRAP_DTW", "DTW 최종 점수: ${finalResult.score}점")
+
+        activity?.runOnUiThread {
+            if (!isAdded) return@runOnUiThread
+
+            android.app.AlertDialog.Builder(requireContext())
+                .setTitle("운동 결산 보고서")
+                .setMessage("💪 최종 점수: ${finalResult.score}점\n\n${finalResult.feedback}")
+                .setCancelable(false)
+                .setPositiveButton("확인") { _, _ ->
+                    trySafePopBackStack()
+                }
+                .show()
+
+            speakOut(finalResult.feedback)
+        }
+    }
+
+    private fun trySafePopBackStack() {
+        try {
+            findNavController().popBackStack()
+        } catch (e: Exception) {
+            Log.e("STRAP_APP", "백스택 이동 실패 (이미 화면이 전환됨): ${e.message}")
+        }
+    }
+
+    private fun resetSmoothing() {
+        smoothedPelvisX = -1f; smoothedPelvisY = -1f; smoothedSpineLength = -1f
+        badPostureFrameCount = 0
     }
 
     private fun speakOut(text: String, isWarning: Boolean = false) {
@@ -462,7 +415,6 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
         val isFirstTime = sharedPref.getBoolean("isFirstTimePoseAnalysis", true)
 
         if (isFirstTime) {
-            // ✅ 에러가 났던 테마 부분을 지우고 깔끔하게 requireContext()만 남깁니다!
             android.app.AlertDialog.Builder(requireContext())
                 .setTitle("자세 분석 팁")
                 .setMessage("분석을 시작하기 전에 아래 3가지를 꼭 지켜주세요!\n\n" +
@@ -483,9 +435,21 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) { if (status == TextToSpeech.SUCCESS) tts?.language = Locale.KOREAN }
 
+    // 🚀 안전하게 타이머와 리소스를 멈추는 함수
+    private fun stopAnalysisSafely() {
+        timerHandler.removeCallbacks(timerRunnable)
+        tts?.stop()
+    }
+
+    // 🚀 앱이 백그라운드로 내려가면(홈 버튼 등) 분석 강제 중단
+    override fun onPause() {
+        super.onPause()
+        stopAnalysisSafely()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
-        timerHandler.removeCallbacks(timerRunnable)
+        stopAnalysisSafely()
         tts?.shutdown()
         _binding = null
     }
