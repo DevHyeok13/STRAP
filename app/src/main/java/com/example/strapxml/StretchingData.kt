@@ -2,6 +2,15 @@ package com.example.strapxml
 
 import java.io.Serializable
 
+// 🚀 [2번 개선] 부위별 중요도를 설정하는 클래스 추가 (기본값은 모두 1.0)
+data class JointWeights(
+    val spine: Float = 1.0f,
+    val shoulder: Float = 1.0f,
+    val elbow: Float = 1.0f,
+    val hip: Float = 1.0f,
+    val knee: Float = 1.0f
+) : Serializable
+
 // 3D 엔진용 2D 포인트 클래스 (UI 신호등용)
 data class Point2D(val x: Float, val y: Float) : Serializable
 
@@ -10,7 +19,8 @@ data class DynamicTargetPose(
     val targetTrajectory: List<OptimizedAngles>, // C++ 엔진이 뱉어낸 움직임 궤적 전체
     val baseLandmarks2D: Map<Int, Point2D>,      // UI 가이드용 기본 뼈대 (첫 프레임 기준)
     val instruction: String,                     // 음성/텍스트 안내 메시지
-    val failMessage: String                      // 오차가 너무 클 때 피드백
+    val failMessage: String,                     // 오차가 너무 클 때 피드백
+    val weights: JointWeights = JointWeights()   // 🚀 [2번 개선] 가중치 데이터 속성 추가
 )
 
 data class CustomVideoInfo(
@@ -22,7 +32,7 @@ data class CustomVideoInfo(
 )
 
 object StretchingData {
-    const val targetVideoIds = "6l1lnpS8oaQ,,nhGIlCRFTmM,aDbqk7JbpEs,UfCK3L3ur3w"
+    const val targetVideoIds = "6l1lnpS8oaQ,nhGIlCRFTmM,aDbqk7JbpEs,UfCK3L3ur3w"
 
     val myCustomData = mapOf(
 
@@ -33,6 +43,7 @@ object StretchingData {
             category = "허리",
             prepInstruction = "고양이 체조를 준비합니다. 바닥에 엎드려 기어가는 자세를 취해주세요.",
             dynamicTarget = DynamicTargetPose(
+                weights = JointWeights(spine = 2.0f, hip = 1.5f, shoulder = 1.0f, elbow = 0.5f, knee = 0.2f),
                 targetTrajectory = listOf(
                     OptimizedAngles(102.7f, -37.4f, -46.2f, -7.9f, -49.1f, -44.2f, -11.3f, 9.9f, -6.5f, 94.0f, -27.3f, 33.7f, 40.4f),
                     OptimizedAngles(104.2f, -42.4f, -44.8f, 1.0f, -50.5f, -44.0f, -10.2f, 9.2f, -5.5f, 92.2f, -20.3f, 33.0f, 38.8f),
@@ -74,17 +85,20 @@ object StretchingData {
                     OptimizedAngles(114.2f, -44.6f, -45.5f, -3.1f, -52.0f, -45.8f, -11.7f, 3.8f, 3.8f, 73.4f, -27.2f, 42.2f, 19.1f),
                     OptimizedAngles(116.9f, -43.5f, -45.0f, -8.2f, -51.7f, -46.2f, -12.0f, 12.8f, 5.2f, 39.8f, -24.2f, 43.5f, 12.9f)
                 ),
-                baseLandmarks2D = mapOf(11 to Point2D(0.5195f, 0.5062f), 12 to Point2D(0.5300f, 0.5121f), 13 to Point2D(0.5389f, 0.5668f), 14 to Point2D(0.5433f, 0.5736f), 15 to Point2D(0.5570f, 0.6162f), 16 to Point2D(0.5662f, 0.6309f), 23 to Point2D(0.3970f, 0.5226f), 24 to Point2D(0.4006f, 0.5252f), 25 to Point2D(0.4162f, 0.6124f), 26 to Point2D(0.4212f, 0.6160f), 27 to Point2D(0.2997f, 0.6147f), 28 to Point2D(0.2968f, 0.6165f)),
+                baseLandmarks2D =  mapOf(11 to Point2D(0.5195f, 0.5062f), 12 to Point2D(0.5300f, 0.5121f), 13 to Point2D(0.5389f, 0.5668f), 14 to Point2D(0.5433f, 0.5736f), 15 to Point2D(0.5570f, 0.6162f), 16 to Point2D(0.5662f, 0.6309f), 23 to Point2D(0.3970f, 0.5226f), 24 to Point2D(0.4006f, 0.5252f), 25 to Point2D(0.4162f, 0.6124f), 26 to Point2D(0.4212f, 0.6160f), 27 to Point2D(0.2997f, 0.6147f), 28 to Point2D(0.2968f, 0.6165f)),
                 instruction = "등을 둥글게 말아주세요.",
                 failMessage = "허리가 아래로 처졌습니다."
             )
         ),
+
+        // 2. 거북목 교정
         "nhGIlCRFTmM" to CustomVideoInfo(
             title = "거북목 굽은등 교정",
             description = "거북목과 굽은등을 교정해주는 스트레칭입니다.",
             category = "허리, 목",
             prepInstruction = "거북목 교정 운동입니다. 화면 측면이 보이도록 서서 엄지로 턱을 받쳐주세요.",
             dynamicTarget = DynamicTargetPose(
+                weights = JointWeights(spine = 2.5f, shoulder = 2.0f, hip = 0.5f, elbow = 0.5f, knee = 0.1f),
                 targetTrajectory = listOf(
                     OptimizedAngles(-3.2f, 115.9f, -33.1f, 91.6f, 103.2f, 22.3f, 33.8f, -16.8f, -26.9f, 2.9f, 7.3f, 4.2f, -3.7f),
                     OptimizedAngles(-3.9f, 127.2f, -31.4f, 73.7f, 100.5f, 24.0f, 45.1f, -15.9f, -27.8f, 1.5f, 5.5f, 3.0f, -1.2f),
@@ -144,17 +158,20 @@ object StretchingData {
                     OptimizedAngles(-7.2f, 108.3f, -29.7f, 97.1f, 99.1f, 24.2f, 44.0f, -16.9f, -29.1f, -0.4f, 4.9f, 3.1f, -7.1f),
                     OptimizedAngles(-5.1f, 121.1f, -25.3f, 64.0f, 93.5f, 26.6f, 53.1f, -18.4f, -28.9f, 1.8f, -0.8f, 2.3f, 10.5f)
                 ),
-                baseLandmarks2D =  mapOf(11 to Point2D(0.4165f, 0.4255f), 12 to Point2D(0.4267f, 0.4376f), 13 to Point2D(0.3694f, 0.3850f), 14 to Point2D(0.3927f, 0.4119f), 15 to Point2D(0.4040f, 0.4007f), 16 to Point2D(0.4032f, 0.4083f), 23 to Point2D(0.4073f, 0.5364f), 24 to Point2D(0.4135f, 0.5377f), 25 to Point2D(0.4463f, 0.6198f), 26 to Point2D(0.4378f, 0.6173f), 27 to Point2D(0.4797f, 0.7032f), 28 to Point2D(0.4743f, 0.6963f)),
+                baseLandmarks2D = mapOf(11 to Point2D(0.4165f, 0.4255f), 12 to Point2D(0.4267f, 0.4376f), 13 to Point2D(0.3694f, 0.3850f), 14 to Point2D(0.3927f, 0.4119f), 15 to Point2D(0.4040f, 0.4007f), 16 to Point2D(0.4032f, 0.4083f), 23 to Point2D(0.4073f, 0.5364f), 24 to Point2D(0.4135f, 0.5377f), 25 to Point2D(0.4463f, 0.6198f), 26 to Point2D(0.4378f, 0.6173f), 27 to Point2D(0.4797f, 0.7032f), 28 to Point2D(0.4743f, 0.6963f)),
                 instruction = "배를 내밀고, 엄지로 턱을 밀어 올려 상체를 젖혀주세요.",
                 failMessage = "상체를 너무 젖혔거나 펴졌습니다."
             )
         ),
+
+        // 3. 월 엔젤
         "aDbqk7JbpEs" to CustomVideoInfo(
             title = "월 엔젤",
             description = "거북목과 굽은등을 교정해주는 스트레칭입니다.",
             category = "허리, 목",
             prepInstruction = "월 엔젤 운동입니다. 벽에 등과 발뒤꿈치를 밀착하고 서주세요.",
             dynamicTarget = DynamicTargetPose(
+                weights = JointWeights(shoulder = 2.5f, spine = 1.5f, elbow = 1.5f, hip = 0.5f, knee = 0.1f),
                 targetTrajectory = listOf(
                     OptimizedAngles(12.4f, 145.0f, -47.8f, 31.9f, 37.6f, 130.1f, 51.9f, -4.8f, -28.5f, 29.4f, -11.5f, 27.8f, 52.4f),
                     OptimizedAngles(15.5f, 140.9f, -46.0f, 34.9f, 93.8f, 93.7f, 80.7f, -4.0f, -27.7f, 40.7f, -7.4f, 29.7f, 42.5f),
@@ -167,12 +184,15 @@ object StretchingData {
                 failMessage = "팔이 너무 과하게 굽혀졌거나 펴졌습니다."
             )
         ),
+
+        // 4. 어깨 외회전 가동성 운동
         "UfCK3L3ur3w" to CustomVideoInfo(
             title = "어깨 외회전 가동성 운동",
             description = "어깨의 가동성을 늘려주는 스트레칭입니다.",
             category = "어깨",
             prepInstruction = "어깨 가동성 운동입니다. 벽을 옆에 두고 서서 한쪽 팔을 벽에 대주세요.",
             dynamicTarget = DynamicTargetPose(
+                weights = JointWeights(shoulder = 3.0f, elbow = 2.0f, spine = 1.0f, hip = 0.2f, knee = 0.1f),
                 targetTrajectory = listOf(
                     OptimizedAngles(14.3f, -30.6f, -46.0f, 22.4f, -22.4f, 61.6f, -9.3f, 2.5f, -13.5f, 20.0f, -0.6f, 15.6f, 24.9f),
                     OptimizedAngles(12.2f, -24.7f, -43.3f, 8.4f, -29.5f, 59.7f, 2.4f, -2.7f, -11.7f, 32.3f, -2.1f, 15.8f, 27.8f),
@@ -184,7 +204,7 @@ object StretchingData {
                     OptimizedAngles(15.0f, -20.4f, -42.4f, 3.9f, -18.6f, 52.1f, -9.8f, -0.5f, -16.4f, 35.1f, -1.1f, 17.4f, 27.8f),
                     OptimizedAngles(16.8f, -16.1f, -43.3f, -3.9f, -27.6f, 50.9f, -0.8f, -1.6f, -15.4f, 38.6f, 1.4f, 16.3f, 26.4f),
                     OptimizedAngles(11.4f, -24.3f, -43.2f, 9.0f, -29.2f, 52.0f, -10.8f, -1.4f, -16.3f, 39.5f, -0.7f, 17.1f, 27.1f)
-            ),
+                ),
                 baseLandmarks2D = mapOf(11 to Point2D(0.6207f, 0.5612f), 12 to Point2D(0.5138f, 0.5609f), 13 to Point2D(0.6473f, 0.6250f), 14 to Point2D(0.4922f, 0.6133f), 15 to Point2D(0.6510f, 0.6891f), 16 to Point2D(0.4362f, 0.6153f), 23 to Point2D(0.5896f, 0.6939f), 24 to Point2D(0.5287f, 0.6920f), 25 to Point2D(0.5835f, 0.7858f), 26 to Point2D(0.5411f, 0.7901f), 27 to Point2D(0.5734f, 0.8503f), 28 to Point2D(0.5326f, 0.8542f)),
                 instruction = "팔을 벽에 고정하고 무게중심을 앞으로 이동하세요.",
                 failMessage = "팔꿈치가 과하게 펴졌거나 굽혀졌습니다. 90도를 유지하세요."

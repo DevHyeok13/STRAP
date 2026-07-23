@@ -14,21 +14,21 @@ class TargetPoseOverlayView(context: Context, attrs: AttributeSet?) : View(conte
     private var userPelvisX: Float = 0f
     private var userPelvisY: Float = 0f
     private var userSpineLength: Float = 0f
-    private var boneColors: Map<String, Int>? = null // 🚀 뼈대별 색상 정보 맵 추가!
+    private var boneColors: Map<String, Int>? = null // 🚀 관절별 색상(에러) 정보 맵
 
     fun setTargetPose(
         landmarks: Map<Int, Point2D>?,
         pelvisX: Float = 0f,
         pelvisY: Float = 0f,
         spineLength: Float = 0f,
-        colors: Map<String, Int>? = null // 색상 파라미터 추가
+        colors: Map<String, Int>? = null // 🚀 관절 ID("11", "12" 등)를 키로 갖는 색상 맵
     ) {
         this.targetLandmarks = landmarks
         this.userPelvisX = pelvisX
         this.userPelvisY = pelvisY
         this.userSpineLength = spineLength
         this.boneColors = colors
-        invalidate()
+        invalidate() // 화면 갱신
     }
 
     private val paint = Paint().apply {
@@ -59,18 +59,25 @@ class TargetPoseOverlayView(context: Context, attrs: AttributeSet?) : View(conte
         if (targetSpineLength <= 0f) return
 
         val scale = userSpineLength / targetSpineLength
-        paint.strokeWidth = 15f * scale
 
         fun drawLine(start: Int, end: Int) {
             val p1 = lms[start]
             val p2 = lms[end]
             if (p1 != null && p2 != null) {
-                // 🚀 이 관절에 해당하는 색상이 있는지 확인 (없으면 기본 초록색)
-                val lineKey = "${start}_${end}"
-                val targetColor = boneColors?.get(lineKey) ?: Color.parseColor("#9900FF64")
+                // 🚀 핵심 수정: 시작점(start)이나 끝점(end) 중 하나라도 errorMap에 있는지 확인
+                val startKey = start.toString()
+                val endKey = end.toString()
+
+                val isError = boneColors?.containsKey(startKey) == true || boneColors?.containsKey(endKey) == true
+
+                // 에러가 있다면 해당 빨간색을, 없다면 기본 초록색 반투명(#9900FF64) 적용
+                val targetColor = boneColors?.get(startKey) ?: boneColors?.get(endKey) ?: Color.parseColor("#9900FF64")
 
                 paint.color = targetColor
                 pointPaint.color = targetColor
+
+                // 🚀 틀린 부분(빨간선)은 조금 더 굵게 표시하여 사용자가 쉽게 인지하도록 함
+                paint.strokeWidth = if (isError) 20f * scale else 15f * scale
 
                 val startX = (p1.x * w - tPelvisX) * scale + userPelvisX
                 val startY = (p1.y * h - tPelvisY) * scale + userPelvisY
