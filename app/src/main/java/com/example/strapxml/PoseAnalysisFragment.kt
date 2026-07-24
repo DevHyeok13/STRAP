@@ -384,6 +384,10 @@ class PoseAnalysisFragment : Fragment(), TextToSpeech.OnInitListener {
             dynamicTarget.weights
         )
 
+        // 🚀 [새로 추가된 부분] 분석 완료 후 기록실에 점수 저장하기
+        val stretchName = StretchingData.myCustomData[currentVideoId]?.title ?: "맞춤 스트레칭"
+        HistoryManager.saveRecord(requireContext(), stretchName, 20, finalResult.score)
+
         android.app.AlertDialog.Builder(requireContext())
             .setTitle("운동 결산 보고서")
             .setMessage("💪 최종 점수: ${finalResult.score}점\n\n${finalResult.feedback}")
